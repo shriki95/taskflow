@@ -1,12 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { LayoutGrid, List, CalendarDays, Plus, ArrowLeft, Pencil, Trash2 } from 'lucide-react';
-import { projectsApi, tasksApi } from '../api/supabase';
+import {
+  LayoutGrid, List, CalendarDays, CalendarRange, Sun,
+  Plus, ArrowLeft, Pencil, Trash2,
+} from 'lucide-react';
+import { projectsApi, tasksApi, taskGroupsApi } from '../api/supabase';
 import Layout from '../components/Layout';
 import KanbanBoard from '../components/KanbanBoard';
 import ListView from '../components/ListView';
 import CalendarView from '../components/CalendarView';
+import WeekView from '../components/WeekView';
+import DayView from '../components/DayView';
 import TaskDetail from '../components/TaskDetail';
 import CreateTaskModal from '../components/CreateTaskModal';
 import EditProjectModal from '../components/EditProjectModal';
@@ -18,10 +23,12 @@ export default function ProjectPage() {
   const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [members, setMembers] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
   const [view, setView] = useState('board');
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [createStatus, setCreateStatus] = useState('todo');
+  const [createGroupId, setCreateGroupId] = useState(null);
   const [showEditProject, setShowEditProject] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -31,14 +38,16 @@ export default function ProjectPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [projRes, tasksRes, membersRes] = await Promise.all([
+        const [projRes, tasksRes, membersRes, groupsRes] = await Promise.all([
           projectsApi.get(projectId),
           tasksApi.list(projectId),
           projectsApi.members(projectId),
+          taskGroupsApi.list(projectId),
         ]);
         setProject(projRes.data);
         setTasks(tasksRes.data.tasks);
         setMembers(membersRes.data.members);
+        setGroups(groupsRes.data.groups);
       } catch (err) {
         setError(err?.response?.data?.error || 'Failed to load project');
       } finally {
@@ -46,20 +55,16 @@ export default function ProjectPage() {
       }
     };
     load();
-  }, [projectId, navigate]);
+  }, [projectId]);
 
   const handleStatusChange = useCallback(
     async (taskId, newStatus) => {
       const original = tasks.find((t) => t.taskId === taskId)?.status;
-      setTasks((prev) =>
-        prev.map((t) => (t.taskId === taskId ? { ...t, status: newStatus } : t))
-      );
+      setTasks((prev) => prev.map((t) => (t.taskId === taskId ? { ...t, status: newStatus } : t)));
       try {
         await tasksApi.update(projectId, taskId, { status: newStatus });
       } catch {
-        setTasks((prev) =>
-          prev.map((t) => (t.taskId === taskId ? { ...t, status: original } : t))
-        );
+        setTasks((prev) => prev.map((t) => (t.taskId === taskId ? { ...t, status: original } : t)));
       }
     },
     [tasks, projectId]
@@ -68,27 +73,19 @@ export default function ProjectPage() {
   const handleDueDateChange = useCallback(
     async (taskId, newDate) => {
       const original = tasks.find((t) => t.taskId === taskId)?.due_date;
-      setTasks((prev) =>
-        prev.map((t) => (t.taskId === taskId ? { ...t, due_date: newDate || null } : t))
-      );
+      setTasks((prev) => prev.map((t) => (t.taskId === taskId ? { ...t, due_date: newDate || null } : t)));
       try {
         await tasksApi.update(projectId, taskId, { due_date: newDate || null });
       } catch {
-        setTasks((prev) =>
-          prev.map((t) => (t.taskId === taskId ? { ...t, due_date: original } : t))
-        );
+        setTasks((prev) => prev.map((t) => (t.taskId === taskId ? { ...t, due_date: original } : t)));
       }
     },
     [tasks, projectId]
   );
 
   const handleTaskUpdate = useCallback((updatedTask) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.taskId === updatedTask.taskId ? updatedTask : t))
-    );
-    setSelectedTask((prev) =>
-      prev?.taskId === updatedTask.taskId ? updatedTask : prev
-    );
+    setTasks((prev) => prev.map((t) => (t.taskId === updatedTask.taskId ? updatedTask : t)));
+    setSelectedTask((prev) => (prev?.taskId === updatedTask.taskId ? updatedTask : prev));
   }, []);
 
   const handleTaskDelete = useCallback((taskId) => {
@@ -117,8 +114,30 @@ export default function ProjectPage() {
     }
   };
 
-  const openCreateTask = (status = 'todo') => {
-    setCreateStatus(status);
+  const handleGroupCreate = useCallback(async (name) => {
+    const { data } = await taskGroupsApi.create(projectId, { name, position: groups.length });
+    setGroups((prev) => [...prev, data]);
+  }, [projectId, groups]);
+
+  const handleGroupUpdate = useCallback(async (groupId, name) => {
+    setGroups((prev) => prev.map((g) => (g.groupId === groupId ? { ...g, name } : g)));
+    await taskGroupsApi.update(groupId, { name });
+  }, []);
+
+  const handleGroupDelete = useCallback(async (groupId) => {
+    setGroups((prev) => prev.filter((g) => g.groupId !== groupId));
+    setTasks((prev) => prev.map((t) => (t.group_id === groupId ? { ...t, group_id: null } : t)));
+    await taskGroupsApi.delete(groupId);
+  }, []);
+
+  const openCreateTask = (options = {}) => {
+    if (typeof options === 'string') {
+      setCreateStatus(options);
+      setCreateGroupId(null);
+    } else {
+      setCreateStatus(options.status || 'todo');
+      setCreateGroupId(options.groupId || null);
+    }
     setShowCreateTask(true);
   };
 
@@ -145,23 +164,25 @@ export default function ProjectPage() {
     );
   }
 
+  const VIEWS = [
+    { id: 'board',    icon: <LayoutGrid size={14} />,   label: 'Board' },
+    { id: 'list',     icon: <List size={14} />,         label: 'List' },
+    { id: 'calendar', icon: <CalendarDays size={14} />, label: 'Month' },
+    { id: 'week',     icon: <CalendarRange size={14} />,label: 'Week' },
+    { id: 'day',      icon: <Sun size={14} />,          label: 'Day' },
+  ];
+
   return (
     <Layout>
       <div className="flex flex-col h-full overflow-hidden">
         {/* Header */}
         <div className="flex-shrink-0 px-6 py-4 border-b border-app-border flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="text-slate-500 hover:text-slate-300 transition"
-            >
+            <button onClick={() => navigate('/dashboard')} className="text-slate-500 hover:text-slate-300 transition">
               <ArrowLeft size={18} />
             </button>
             <div className="flex items-center gap-2.5">
-              <div
-                className="w-3 h-3 rounded-full flex-shrink-0"
-                style={{ backgroundColor: project?.color }}
-              />
+              <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: project?.color }} />
               <h1 className="text-lg font-semibold text-slate-100">{project?.name}</h1>
             </div>
           </div>
@@ -169,19 +190,16 @@ export default function ProjectPage() {
           <div className="flex items-center gap-3">
             {/* View Toggle */}
             <div className="flex bg-app-bg border border-app-border rounded-lg p-1">
-              {[
-                { id: 'board',    icon: <LayoutGrid size={14} />,    label: 'Board' },
-                { id: 'list',     icon: <List size={14} />,          label: 'List' },
-                { id: 'calendar', icon: <CalendarDays size={14} />,  label: 'Calendar' },
-              ].map(({ id, icon, label }) => (
+              {VIEWS.map(({ id, icon, label }) => (
                 <button
                   key={id}
                   onClick={() => setView(id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm font-medium transition ${
                     view === id ? 'bg-brand-accent text-white' : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  {icon}{label}
+                  {icon}
+                  <span className="hidden sm:inline">{label}</span>
                 </button>
               ))}
             </div>
@@ -248,11 +266,31 @@ export default function ProjectPage() {
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
                 onDueDateChange={handleDueDateChange}
-                onAddTask={() => openCreateTask('todo')}
+                onAddTask={openCreateTask}
+                groups={groups}
+                onGroupCreate={handleGroupCreate}
+                onGroupUpdate={handleGroupUpdate}
+                onGroupDelete={handleGroupDelete}
               />
             )}
             {view === 'calendar' && (
               <CalendarView
+                tasks={tasks}
+                members={members}
+                onTaskClick={setSelectedTask}
+                onStatusChange={handleStatusChange}
+              />
+            )}
+            {view === 'week' && (
+              <WeekView
+                tasks={tasks}
+                members={members}
+                onTaskClick={setSelectedTask}
+                onStatusChange={handleStatusChange}
+              />
+            )}
+            {view === 'day' && (
+              <DayView
                 tasks={tasks}
                 members={members}
                 onTaskClick={setSelectedTask}
@@ -268,6 +306,7 @@ export default function ProjectPage() {
                 task={selectedTask}
                 projectId={projectId}
                 members={members}
+                groups={groups}
                 onClose={() => setSelectedTask(null)}
                 onUpdate={handleTaskUpdate}
                 onDelete={handleTaskDelete}
@@ -283,7 +322,9 @@ export default function ProjectPage() {
           <CreateTaskModal
             projectId={projectId}
             initialStatus={createStatus}
+            initialGroupId={createGroupId}
             members={members}
+            groups={groups}
             onClose={() => setShowCreateTask(false)}
             onCreate={handleTaskCreate}
           />
@@ -306,35 +347,23 @@ export default function ProjectPage() {
         {showDeleteConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => !deleting && setShowDeleteConfirm(false)}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="relative bg-app-card border border-app-border rounded-2xl p-6 w-full max-w-sm z-10"
             >
               <h3 className="text-lg font-semibold text-slate-100 mb-2">Delete project?</h3>
               <p className="text-slate-400 text-sm mb-6">
-                <span className="text-slate-200 font-medium">"{project?.name}"</span> and all its tasks will be permanently deleted. This cannot be undone.
+                <span className="text-slate-200 font-medium">"{project?.name}"</span> and all its tasks will be permanently deleted.
               </p>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  disabled={deleting}
-                  className="flex-1 border border-app-border text-slate-400 hover:text-slate-200 py-2.5 rounded-lg transition font-medium disabled:opacity-40"
-                >
+                <button onClick={() => setShowDeleteConfirm(false)} disabled={deleting} className="flex-1 border border-app-border text-slate-400 hover:text-slate-200 py-2.5 rounded-lg transition font-medium disabled:opacity-40">
                   Cancel
                 </button>
-                <button
-                  onClick={handleDeleteProject}
-                  disabled={deleting}
-                  className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white py-2.5 rounded-lg transition font-semibold"
-                >
+                <button onClick={handleDeleteProject} disabled={deleting} className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white py-2.5 rounded-lg transition font-semibold">
                   {deleting ? 'Deleting…' : 'Delete'}
                 </button>
               </div>

@@ -32,9 +32,18 @@ const fmtTask = (t) => ({
   priority: t.priority || 'medium',
   due_date: t.due_date || null,
   assignee_id: t.assignee_id || null,
+  group_id: t.group_id || null,
   created_by: t.created_by || null,
   created_at: t.created_at,
   updated_at: t.updated_at,
+});
+
+const fmtGroup = (g) => ({
+  groupId: g.id,
+  projectId: g.project_id,
+  name: g.name,
+  position: g.position || 0,
+  created_at: g.created_at,
 });
 
 const fmtSubtask = (s) => ({
@@ -215,6 +224,7 @@ export const tasksApi = {
         priority: fields.priority || 'medium',
         due_date: fields.due_date || null,
         assignee_id: fields.assignee_id || null,
+        group_id: fields.group_id || null,
         created_by: user.id,
       })
       .select().single();
@@ -237,6 +247,7 @@ export const tasksApi = {
     if (fields.priority !== undefined)    updates.priority = fields.priority;
     if (fields.due_date !== undefined)    updates.due_date = fields.due_date;
     if (fields.assignee_id !== undefined) updates.assignee_id = fields.assignee_id;
+    if (fields.group_id !== undefined)    updates.group_id = fields.group_id;
 
     const { data, error } = await supabase
       .from('tasks').update(updates).eq('id', taskId).select().single();
@@ -330,6 +341,40 @@ export const commentsApi = {
         created_at: data.created_at,
       },
     };
+  },
+};
+
+// ══════════════════════════════════════════════════════════════
+// TASK GROUPS API
+// ══════════════════════════════════════════════════════════════
+export const taskGroupsApi = {
+  list: async (projectId) => {
+    const { data, error } = await supabase
+      .from('task_groups').select('*').eq('project_id', projectId).order('position');
+    if (error) wrap(error);
+    return { data: { groups: (data || []).map(fmtGroup) } };
+  },
+
+  create: async (projectId, { name, position = 0 }) => {
+    const { data, error } = await supabase
+      .from('task_groups').insert({ project_id: projectId, name, position }).select().single();
+    if (error) wrap(error);
+    return { data: fmtGroup(data) };
+  },
+
+  update: async (groupId, fields) => {
+    const updates = {};
+    if (fields.name !== undefined)     updates.name = fields.name;
+    if (fields.position !== undefined) updates.position = fields.position;
+    const { error } = await supabase.from('task_groups').update(updates).eq('id', groupId);
+    if (error) wrap(error);
+    return { data: { message: 'Group updated' } };
+  },
+
+  delete: async (groupId) => {
+    const { error } = await supabase.from('task_groups').delete().eq('id', groupId);
+    if (error) wrap(error);
+    return { data: { message: 'Group deleted' } };
   },
 };
 

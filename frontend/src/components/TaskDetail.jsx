@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import {
   X, Trash2, CheckSquare, Square, Send, ChevronDown, Flag, Calendar,
-  User, AlignLeft, Plus, Check,
+  User, AlignLeft, Plus, Check, Layers,
 } from 'lucide-react';
 import { tasksApi, subtasksApi, commentsApi } from '../api/supabase';
 import Avatar from './Avatar';
@@ -82,7 +82,7 @@ function SubtaskItem({ subtask, projectId, taskId, onToggle, onDelete }) {
   );
 }
 
-export default function TaskDetail({ task, projectId, members, onClose, onUpdate, onDelete }) {
+export default function TaskDetail({ task, projectId, members, groups = [], onClose, onUpdate, onDelete }) {
   const [title, setTitle] = useState(task.title);
   const [editingTitle, setEditingTitle] = useState(false);
   const [description, setDescription] = useState(task.description || '');
@@ -315,6 +315,32 @@ export default function TaskDetail({ task, projectId, members, onClose, onUpdate
               )}
             />
           </div>
+
+          {/* Section (only when groups exist) */}
+          {groups.length > 0 && (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-600 w-20 flex-shrink-0">Section</span>
+              <FieldSelect
+                value={task.group_id || ''}
+                options={[
+                  { value: '', label: 'No section' },
+                  ...groups.map((g) => ({ value: g.groupId, label: g.name })),
+                ]}
+                onChange={(v) => updateField({ group_id: v || null })}
+                renderValue={(v) => {
+                  if (!v) return <span className="flex items-center gap-1.5 text-slate-500"><Layers size={12} />No section</span>;
+                  const g = groups.find((x) => x.groupId === v);
+                  return <span className="flex items-center gap-1.5"><Layers size={12} />{g?.name || 'Unknown'}</span>;
+                }}
+                renderOption={(opt) => (
+                  <span className="flex items-center gap-2">
+                    <Layers size={12} className="text-slate-500" />
+                    {opt.label}
+                  </span>
+                )}
+              />
+            </div>
+          )}
 
           {/* Due date */}
           <div className="flex items-center gap-3">

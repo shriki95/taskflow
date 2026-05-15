@@ -19,7 +19,9 @@ const PRIORITIES = [
 export default function CreateTaskModal({
   projectId,
   initialStatus = 'todo',
+  initialGroupId = null,
   members = [],
+  groups = [],
   onClose,
   onCreate,
 }) {
@@ -30,6 +32,7 @@ export default function CreateTaskModal({
     priority: 'medium',
     due_date: '',
     assignee_id: '',
+    group_id: initialGroupId || '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -47,6 +50,7 @@ export default function CreateTaskModal({
         title: form.title.trim(),
         due_date: form.due_date || null,
         assignee_id: form.assignee_id || null,
+        group_id: form.group_id || null,
       };
       const { data } = await tasksApi.create(projectId, payload);
       onCreate(data);
@@ -144,6 +148,23 @@ export default function CreateTaskModal({
               </select>
             </div>
           </div>
+
+          {/* Section (only shown when groups exist) */}
+          {groups.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Section</label>
+              <select
+                value={form.group_id}
+                onChange={(e) => set('group_id', e.target.value)}
+                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition"
+              >
+                <option value="">No section</option>
+                {groups.map((g) => (
+                  <option key={g.groupId} value={g.groupId}>{g.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Row: Due Date + Assignee */}
           <div className="grid grid-cols-2 gap-3">

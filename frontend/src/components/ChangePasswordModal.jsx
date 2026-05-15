@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../api/supabase';
+import { useAuth } from '../context/AuthContext';
 
 export default function ChangePasswordModal({ onClose }) {
+  const { user } = useAuth();
+  const [currentPassword, setCurrentPassword] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPwd, setShowPwd] = useState(false);
@@ -13,13 +16,25 @@ export default function ChangePasswordModal({ onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (!currentPassword) { setError('Please enter your current password'); return; }
+    if (password.length < 6) { setError('New password must be at least 6 characters'); return; }
     if (password !== confirm) { setError('Passwords do not match'); return; }
+    if (password === currentPassword) { setError('New password must be different from current password'); return; }
+
     setLoading(true);
     setError('');
     try {
-      const { error: err } = await supabase.auth.updateUser({ password });
-      if (err) throw err;
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+      if (signInErr) {
+        setError('Current password is incorrect');
+        setLoading(false);
+        return;
+      }
+      const { error: updateErr } = await supabase.auth.updateUser({ password });
+      if (updateErr) throw updateErr;
       setSuccess(true);
       setTimeout(onClose, 2000);
     } catch (err) {
@@ -67,14 +82,14 @@ export default function ChangePasswordModal({ onClose }) {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">New password</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Current password</label>
                 <div className="relative">
                   <input
                     autoFocus
                     type={showPwd ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Min. 6 characters"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Your current password"
                     className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 pr-10 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent transition"
                   />
                   <button
@@ -87,8 +102,19 @@ export default function ChangePasswordModal({ onClose }) {
                 </div>
               </div>
 
+              <div className="border-t border-app-border pt-4">
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">New password</label>
+                <input
+                  type={showPwd ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Min. 6 characters"
+                  className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent transition"
+                />
+              </div>
+
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Confirm password</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Confirm new password</label>
                 <input
                   type={showPwd ? 'text' : 'password'}
                   value={confirm}
@@ -108,7 +134,7 @@ export default function ChangePasswordModal({ onClose }) {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading || !password || !confirm}
+                  disabled={loading || !currentPassword || !password || !confirm}
                   className="flex-1 bg-brand-accent hover:bg-brand-accent/90 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 rounded-lg transition font-semibold"
                 >
                   {loading ? 'Updating…' : 'Update password'}
