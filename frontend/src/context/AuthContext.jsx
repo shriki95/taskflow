@@ -26,24 +26,20 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Restore session on mount
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const profile = await loadProfile(session.user);
-        setUser(profile);
-      }
-      setLoading(false);
-    });
-
-    // Listen for sign-in / sign-out events
+    // onAuthStateChange fires immediately with current session state (replaces getSession)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
-          const profile = await loadProfile(session.user);
-          setUser(profile);
+          try {
+            const profile = await loadProfile(session.user);
+            setUser(profile);
+          } catch {
+            setUser({ userId: session.user.id, email: session.user.email, name: '', avatar_color: '#7c3aed' });
+          }
         } else {
           setUser(null);
         }
+        setLoading(false);
       }
     );
 
