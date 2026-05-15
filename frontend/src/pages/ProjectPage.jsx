@@ -89,7 +89,7 @@ export default function ProjectPage() {
     return (
       <Layout>
         <div className="flex items-center justify-center h-full">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-600 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-accent border-t-transparent" />
         </div>
       </Layout>
     );
@@ -100,7 +100,7 @@ export default function ProjectPage() {
       <Layout>
         <div className="flex flex-col items-center justify-center h-full gap-4">
           <p className="text-red-400">{error}</p>
-          <button onClick={() => navigate('/dashboard')} className="text-violet-400 hover:underline text-sm">
+          <button onClick={() => navigate('/dashboard')} className="text-brand-accent hover:underline text-sm">
             Back to dashboard
           </button>
         </div>
@@ -141,7 +141,7 @@ export default function ProjectPage() {
                   key={id}
                   onClick={() => setView(id)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition ${
-                    view === id ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                    view === id ? 'bg-brand-accent text-white' : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   {icon}{label}
@@ -165,7 +165,7 @@ export default function ProjectPage() {
 
             <button
               onClick={() => openCreateTask('todo')}
-              className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white font-semibold px-3.5 py-2 rounded-lg transition text-sm"
+              className="flex items-center gap-2 bg-brand-accent hover:bg-brand-accent/90 text-white font-semibold px-3.5 py-2 rounded-lg transition text-sm"
             >
               <Plus size={16} />
               Add task
@@ -199,6 +199,7 @@ export default function ProjectPage() {
                 tasks={tasks}
                 members={members}
                 onTaskClick={setSelectedTask}
+                onStatusChange={handleStatusChange}
               />
             )}
           </div>

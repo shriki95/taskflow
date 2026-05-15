@@ -99,7 +99,7 @@ export default function CreateTaskModal({
               value={form.title}
               onChange={(e) => set('title', e.target.value)}
               placeholder="What needs to be done?"
-              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition"
+              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition"
             />
           </div>
 
@@ -113,7 +113,7 @@ export default function CreateTaskModal({
               onChange={(e) => set('description', e.target.value)}
               placeholder="Add more details…"
               rows={2}
-              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition resize-none"
+              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition resize-none"
             />
           </div>
 
@@ -124,7 +124,7 @@ export default function CreateTaskModal({
               <select
                 value={form.status}
                 onChange={(e) => set('status', e.target.value)}
-                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-violet-500 transition"
+                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition"
               >
                 {STATUSES.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
@@ -136,7 +136,7 @@ export default function CreateTaskModal({
               <select
                 value={form.priority}
                 onChange={(e) => set('priority', e.target.value)}
-                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-violet-500 transition"
+                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition"
               >
                 {PRIORITIES.map((p) => (
                   <option key={p.value} value={p.value}>{p.label}</option>
@@ -153,7 +153,7 @@ export default function CreateTaskModal({
                 type="date"
                 value={form.due_date}
                 onChange={(e) => set('due_date', e.target.value)}
-                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-violet-500 transition [color-scheme:dark]"
+                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition [color-scheme:dark]"
               />
             </div>
             <div>
@@ -161,7 +161,7 @@ export default function CreateTaskModal({
               <select
                 value={form.assignee_id}
                 onChange={(e) => set('assignee_id', e.target.value)}
-                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-violet-500 transition"
+                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition"
               >
                 <option value="">Unassigned</option>
                 {members.map((m) => (
@@ -183,7 +183,7 @@ export default function CreateTaskModal({
             <button
               type="submit"
               disabled={loading || !form.title.trim()}
-              className="flex-1 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 rounded-lg transition font-semibold"
+              className="flex-1 bg-brand-accent hover:bg-brand-accent/90 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 rounded-lg transition font-semibold"
             >
               {loading ? 'Creating…' : 'Create task'}
             </button>

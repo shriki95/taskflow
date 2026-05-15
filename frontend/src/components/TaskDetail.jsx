@@ -45,10 +45,10 @@ function FieldSelect({ value, options, onChange, renderOption, renderValue }) {
             <button
               key={opt.value}
               onClick={() => { onChange(opt.value); setOpen(false); }}
-              className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-app-bg transition ${opt.value === value ? 'text-violet-400' : 'text-slate-300'}`}
+              className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-app-bg transition ${opt.value === value ? 'text-brand-accent' : 'text-slate-300'}`}
             >
               {renderOption(opt)}
-              {opt.value === value && <Check size={12} className="ml-auto text-violet-400" />}
+              {opt.value === value && <Check size={12} className="ml-auto text-brand-accent" />}
             </button>
           ))}
         </div>
@@ -62,10 +62,10 @@ function SubtaskItem({ subtask, projectId, taskId, onToggle, onDelete }) {
     <div className="flex items-center gap-2.5 group py-1.5">
       <button
         onClick={() => onToggle(subtask)}
-        className="text-slate-500 hover:text-violet-400 transition flex-shrink-0"
+        className="text-slate-500 hover:text-brand-accent transition flex-shrink-0"
       >
         {subtask.completed
-          ? <CheckSquare size={16} className="text-violet-400" />
+          ? <CheckSquare size={16} className="text-brand-accent" />
           : <Square size={16} />
         }
       </button>
@@ -323,7 +323,7 @@ export default function TaskDetail({ task, projectId, members, onClose, onUpdate
               type="date"
               value={task.due_date ? task.due_date.slice(0, 10) : ''}
               onChange={(e) => updateField({ due_date: e.target.value || null })}
-              className="bg-app-bg border border-app-border rounded-lg px-2.5 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-violet-500 transition [color-scheme:dark]"
+              className="bg-app-bg border border-app-border rounded-lg px-2.5 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [color-scheme:dark]"
             />
           </div>
         </div>
@@ -345,7 +345,7 @@ export default function TaskDetail({ task, projectId, members, onClose, onUpdate
               onBlur={handleDescBlur}
               rows={4}
               placeholder="Add a description…"
-              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:border-violet-500 transition resize-none"
+              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:border-brand-accent transition resize-none"
             />
           ) : (
             <div
@@ -373,7 +373,7 @@ export default function TaskDetail({ task, projectId, members, onClose, onUpdate
               {/* Progress bar */}
               <div className="h-1 bg-app-border rounded-full mb-3 overflow-hidden">
                 <div
-                  className="h-full bg-violet-500 rounded-full transition-all"
+                  className="h-full bg-brand-accent rounded-full transition-all"
                   style={{ width: `${subtasks.length ? (completedSubtasks / subtasks.length) * 100 : 0}%` }}
                 />
               </div>
@@ -396,12 +396,12 @@ export default function TaskDetail({ task, projectId, members, onClose, onUpdate
               value={newSubtask}
               onChange={(e) => setNewSubtask(e.target.value)}
               placeholder="Add subtask…"
-              className="flex-1 bg-app-bg border border-app-border rounded-lg px-3 py-2 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:border-violet-500 transition"
+              className="flex-1 bg-app-bg border border-app-border rounded-lg px-3 py-2 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:border-brand-accent transition"
             />
             <button
               type="submit"
               disabled={addingSubtask || !newSubtask.trim()}
-              className="bg-app-card border border-app-border hover:border-violet-500 text-slate-400 hover:text-violet-400 px-3 rounded-lg transition disabled:opacity-40"
+              className="bg-app-card border border-app-border hover:border-brand-accent text-slate-400 hover:text-brand-accent px-3 rounded-lg transition disabled:opacity-40"
             >
               <Plus size={15} />
             </button>
@@ -441,12 +441,12 @@ export default function TaskDetail({ task, projectId, members, onClose, onUpdate
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               placeholder="Write a comment…"
-              className="flex-1 bg-app-bg border border-app-border rounded-lg px-3 py-2 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:border-violet-500 transition"
+              className="flex-1 bg-app-bg border border-app-border rounded-lg px-3 py-2 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:border-brand-accent transition"
             />
             <button
               type="submit"
               disabled={sendingComment || !commentText.trim()}
-              className="bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white px-3 rounded-lg transition"
+              className="bg-brand-accent hover:bg-brand-accent/90 disabled:opacity-40 text-white px-3 rounded-lg transition"
             >
               <Send size={14} />
             </button>

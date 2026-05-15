@@ -34,7 +34,7 @@ export default function LoginPage() {
       >
         {/* Logo */}
         <div className="flex items-center gap-2 justify-center mb-8">
-          <div className="w-9 h-9 bg-violet-600 rounded-lg flex items-center justify-center">
+          <div className="w-9 h-9 bg-brand-accent rounded-lg flex items-center justify-center">
             <CheckSquare size={20} className="text-white" />
           </div>
           <span className="text-xl font-bold text-slate-100">TaskFlow</span>
@@ -64,7 +64,7 @@ export default function LoginPage() {
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   placeholder="you@company.com"
-                  className="w-full bg-app-bg border border-app-border rounded-lg pl-10 pr-4 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition"
+                  className="w-full bg-app-bg border border-app-border rounded-lg pl-10 pr-4 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition"
                 />
               </div>
             </div>
@@ -81,7 +81,7 @@ export default function LoginPage() {
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   placeholder="••••••••"
-                  className="w-full bg-app-bg border border-app-border rounded-lg pl-10 pr-4 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition"
+                  className="w-full bg-app-bg border border-app-border rounded-lg pl-10 pr-4 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition"
                 />
               </div>
             </div>
@@ -89,7 +89,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition"
+              className="w-full bg-brand-accent hover:bg-brand-accent/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition"
             >
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
@@ -97,7 +97,7 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-slate-500 mt-6">
             Don't have an account?{' '}
-            <Link to="/signup" className="text-violet-400 hover:text-violet-300 font-medium">
+            <Link to="/signup" className="text-brand-accent hover:text-brand-accent/80 font-medium">
               Sign up
             </Link>
           </p>

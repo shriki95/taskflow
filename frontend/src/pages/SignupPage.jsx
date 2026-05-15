@@ -40,7 +40,7 @@ export default function SignupPage() {
           value={form[key]}
           onChange={(e) => setForm({ ...form, [key]: e.target.value })}
           placeholder={placeholder}
-          className="w-full bg-app-bg border border-app-border rounded-lg pl-10 pr-4 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition"
+          className="w-full bg-app-bg border border-app-border rounded-lg pl-10 pr-4 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition"
         />
       </div>
     </div>
@@ -54,7 +54,7 @@ export default function SignupPage() {
         className="w-full max-w-md"
       >
         <div className="flex items-center gap-2 justify-center mb-8">
-          <div className="w-9 h-9 bg-violet-600 rounded-lg flex items-center justify-center">
+          <div className="w-9 h-9 bg-brand-accent rounded-lg flex items-center justify-center">
             <CheckSquare size={20} className="text-white" />
           </div>
           <span className="text-xl font-bold text-slate-100">TaskFlow</span>
@@ -79,7 +79,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition"
+              className="w-full bg-brand-accent hover:bg-brand-accent/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition"
             >
               {loading ? 'Creating account…' : 'Create account'}
             </button>
@@ -87,7 +87,7 @@ export default function SignupPage() {
 
           <p className="text-center text-sm text-slate-500 mt-6">
             Already have an account?{' '}
-            <Link to="/login" className="text-violet-400 hover:text-violet-300 font-medium">
+            <Link to="/login" className="text-brand-accent hover:text-brand-accent/80 font-medium">
               Sign in
             </Link>
           </p>

@@ -9,16 +9,26 @@ const PRIORITY = {
 };
 
 const STATUS_ICON = {
-  todo: <Circle size={16} className="text-slate-500" />,
-  in_progress: <Clock size={16} className="text-blue-400" />,
-  done: <CheckCircle2 size={16} className="text-emerald-400" />,
+  todo: (props) => <Circle size={16} className="text-slate-500" {...props} />,
+  in_progress: (props) => <Clock size={16} className="text-blue-400" {...props} />,
+  done: (props) => <CheckCircle2 size={16} className="text-emerald-400" {...props} />,
 };
 
-function TaskRow({ task, members, onClick }) {
+function TaskRow({ task, members, onClick, onStatusChange }) {
   const priority = PRIORITY[task.priority] || PRIORITY.medium;
   const assignee = members.find((m) => m.userId === task.assignee_id);
   const dueDate = task.due_date ? new Date(task.due_date) : null;
-  const isOverdue = dueDate && isPast(dueDate) && !isToday(dueDate) && task.status !== 'done';
+  const isDone = task.status === 'done';
+  const isOverdue = dueDate && isPast(dueDate) && !isToday(dueDate) && !isDone;
+
+  const handleToggleDone = (e) => {
+    e.stopPropagation();
+    if (onStatusChange) {
+      onStatusChange(task.taskId, isDone ? 'todo' : 'done');
+    }
+  };
+
+  const IconComponent = STATUS_ICON[task.status] || STATUS_ICON.todo;
 
   return (
     <tr
@@ -26,11 +36,17 @@ function TaskRow({ task, members, onClick }) {
       className="group border-b border-app-border hover:bg-app-card/50 cursor-pointer transition-colors"
     >
       <td className="py-3 pl-4 pr-2 w-8">
-        {STATUS_ICON[task.status] || STATUS_ICON.todo}
+        <button
+          onClick={handleToggleDone}
+          className="focus:outline-none hover:opacity-70 transition-opacity"
+          title={isDone ? 'Mark as to-do' : 'Mark as done'}
+        >
+          <IconComponent />
+        </button>
       </td>
 
       <td className="py-3 pr-3 min-w-0">
-        <span className={`text-sm font-medium ${task.status === 'done' ? 'line-through text-slate-500' : 'text-slate-200'}`}>
+        <span className={`text-sm font-medium ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}>
           {task.title}
         </span>
       </td>
@@ -87,7 +103,7 @@ function SectionHeader({ label, count, dot }) {
   );
 }
 
-export default function ListView({ tasks, members, onTaskClick, onAddTask }) {
+export default function ListView({ tasks, members, onTaskClick, onStatusChange, onAddTask }) {
   const sections = [
     { id: 'todo', label: 'To Do', dot: 'bg-slate-500' },
     { id: 'in_progress', label: 'In Progress', dot: 'bg-blue-500' },
@@ -131,6 +147,7 @@ export default function ListView({ tasks, members, onTaskClick, onAddTask }) {
                     task={task}
                     members={members}
                     onClick={() => onTaskClick(task)}
+                    onStatusChange={onStatusChange}
                   />
                 ))}
               </>

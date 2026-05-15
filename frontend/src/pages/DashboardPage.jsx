@@ -73,7 +73,7 @@ function CreateProjectModal({ onClose, onCreate }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="My awesome project"
-              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition"
+              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition"
             />
           </div>
 
@@ -86,7 +86,7 @@ function CreateProjectModal({ onClose, onCreate }) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What's this project about?"
               rows={2}
-              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition resize-none"
+              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition resize-none"
             />
           </div>
 
@@ -116,7 +116,7 @@ function CreateProjectModal({ onClose, onCreate }) {
             <button
               type="submit"
               disabled={loading || !name.trim()}
-              className="flex-1 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 rounded-lg transition font-semibold"
+              className="flex-1 bg-brand-accent hover:bg-brand-accent/90 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 rounded-lg transition font-semibold"
             >
               {loading ? 'Creating…' : 'Create project'}
             </button>
@@ -142,7 +142,7 @@ function ProjectCard({ project, onClick }) {
           <FolderKanban size={18} style={{ color: project.color }} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-slate-100 truncate group-hover:text-violet-300 transition">
+          <h3 className="font-semibold text-slate-100 truncate group-hover:text-brand-accent transition">
             {project.name}
           </h3>
           {project.description && (
@@ -188,7 +188,7 @@ export default function DashboardPage() {
           </div>
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white font-semibold px-4 py-2.5 rounded-lg transition"
+            className="flex items-center gap-2 bg-brand-accent hover:bg-brand-accent/90 text-white font-semibold px-4 py-2.5 rounded-lg transition"
           >
             <Plus size={18} />
             New project
@@ -197,7 +197,7 @@ export default function DashboardPage() {
 
         {loading ? (
           <div className="flex items-center justify-center h-40">
-            <div className="h-7 w-7 animate-spin rounded-full border-2 border-violet-600 border-t-transparent" />
+            <div className="h-7 w-7 animate-spin rounded-full border-2 border-brand-accent border-t-transparent" />
           </div>
         ) : projects.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
@@ -210,7 +210,7 @@ export default function DashboardPage() {
             </p>
             <button
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white font-semibold px-4 py-2.5 rounded-lg transition"
+              className="flex items-center gap-2 bg-brand-accent hover:bg-brand-accent/90 text-white font-semibold px-4 py-2.5 rounded-lg transition"
             >
               <Plus size={16} />
               Create first project

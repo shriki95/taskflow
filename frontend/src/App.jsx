@@ -8,7 +8,7 @@ import ProjectPage from './pages/ProjectPage';
 function Spinner() {
   return (
     <div className="flex h-screen items-center justify-center bg-app-bg">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-600 border-t-transparent" />
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-accent border-t-transparent" />
     </div>
   );
 }

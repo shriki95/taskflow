@@ -23,7 +23,7 @@ const COLUMNS = [
   { id: 'done', label: 'Done', dot: 'bg-emerald-500' },
 ];
 
-function SortableCard({ task, members, onClick }) {
+function SortableCard({ task, members, onClick, onStatusChange }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: task.taskId });
 
@@ -38,12 +38,12 @@ function SortableCard({ task, members, onClick }) {
       {...attributes}
       {...listeners}
     >
-      <TaskCard task={task} members={members} onClick={onClick} />
+      <TaskCard task={task} members={members} onClick={onClick} onStatusChange={onStatusChange} />
     </div>
   );
 }
 
-function Column({ col, tasks, members, onTaskClick, onAddTask }) {
+function Column({ col, tasks, members, onTaskClick, onAddTask, onStatusChange }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id });
 
   return (
@@ -72,7 +72,7 @@ function Column({ col, tasks, members, onTaskClick, onAddTask }) {
       <div
         ref={setNodeRef}
         className={`flex-1 rounded-xl p-2 min-h-[120px] transition-colors ${
-          isOver ? 'bg-violet-500/5 ring-1 ring-violet-500/20' : 'bg-app-sidebar/40'
+          isOver ? 'bg-brand-accent/5 ring-1 ring-brand-accent/20' : 'bg-app-sidebar/40'
         }`}
       >
         <SortableContext
@@ -85,6 +85,7 @@ function Column({ col, tasks, members, onTaskClick, onAddTask }) {
               task={task}
               members={members}
               onClick={() => onTaskClick(task)}
+              onStatusChange={onStatusChange}
             />
           ))}
         </SortableContext>
@@ -148,6 +149,7 @@ export default function KanbanBoard({ tasks, members, onTaskClick, onStatusChang
             members={members}
             onTaskClick={onTaskClick}
             onAddTask={onAddTask}
+            onStatusChange={onStatusChange}
           />
         ))}
       </div>

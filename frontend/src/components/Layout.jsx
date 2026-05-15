@@ -32,7 +32,7 @@ export default function Layout({ children }) {
         {/* Logo */}
         <div className="px-4 py-4 border-b border-app-border">
           <Link to="/dashboard" className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-violet-600 rounded-md flex items-center justify-center">
+            <div className="w-7 h-7 bg-brand-accent rounded-md flex items-center justify-center">
               <CheckSquare size={15} className="text-white" />
             </div>
             <span className="font-bold text-slate-100 text-sm">TaskFlow</span>
@@ -124,11 +124,11 @@ function NavItem({ to, icon, label, active }) {
       to={to}
       className={`flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm transition mb-0.5 ${
         active
-          ? 'bg-violet-600/15 text-violet-300 font-medium'
+          ? 'bg-brand-accent/15 text-brand-accent font-medium'
           : 'text-slate-400 hover:text-slate-200 hover:bg-app-card'
       }`}
     >
-      <span className={active ? 'text-violet-400' : 'text-slate-500'}>{icon}</span>
+      <span className={active ? 'text-brand-accent' : 'text-slate-500'}>{icon}</span>
       <span className="truncate">{label}</span>
     </Link>
   );

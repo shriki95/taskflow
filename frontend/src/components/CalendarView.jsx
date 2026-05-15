@@ -4,14 +4,8 @@ import {
   eachDayOfInterval, isSameDay, isSameMonth, isToday,
   addMonths, subMonths,
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, Circle, Clock, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
 import Avatar from './Avatar';
-
-const STATUS_DOT = {
-  todo:        'bg-slate-500',
-  in_progress: 'bg-blue-500',
-  done:        'bg-emerald-500',
-};
 
 const PRIORITY_BAR = {
   high:   'bg-red-500',
@@ -19,18 +13,37 @@ const PRIORITY_BAR = {
   low:    'bg-emerald-500',
 };
 
-function TaskChip({ task, members, onClick }) {
+function TaskChip({ task, members, onClick, onStatusChange }) {
   const assignee = members.find((m) => m.userId === task.assignee_id);
+  const isDone = task.status === 'done';
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (onStatusChange) {
+      onStatusChange(task.taskId, isDone ? 'todo' : 'done');
+    }
+  };
+
   return (
     <div
       onClick={(e) => { e.stopPropagation(); onClick(task); }}
-      className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-xs cursor-pointer
+      className={`flex items-center gap-1 px-1 py-0.5 rounded text-xs cursor-pointer
         hover:opacity-80 transition mb-0.5 truncate
-        ${task.status === 'done' ? 'opacity-50' : ''}
+        ${isDone ? 'opacity-50' : ''}
         bg-app-sidebar border border-app-border`}
     >
+      <button
+        onClick={handleToggle}
+        className="flex-shrink-0 focus:outline-none"
+        title={isDone ? 'Mark as to-do' : 'Mark as done'}
+      >
+        {isDone
+          ? <CheckCircle2 size={10} className="text-emerald-400" />
+          : <Circle size={10} className="text-slate-600 hover:text-slate-400 transition-colors" />
+        }
+      </button>
       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PRIORITY_BAR[task.priority] || 'bg-slate-500'}`} />
-      <span className={`truncate flex-1 ${task.status === 'done' ? 'line-through text-slate-500' : 'text-slate-300'}`}>
+      <span className={`truncate flex-1 ${isDone ? 'line-through text-slate-500' : 'text-slate-300'}`}>
         {task.title}
       </span>
       {assignee && (
@@ -45,7 +58,7 @@ function TaskChip({ task, members, onClick }) {
   );
 }
 
-export default function CalendarView({ tasks, members, onTaskClick }) {
+export default function CalendarView({ tasks, members, onTaskClick, onStatusChange }) {
   const [current, setCurrent] = useState(new Date());
 
   const monthStart = startOfMonth(current);
@@ -56,8 +69,6 @@ export default function CalendarView({ tasks, members, onTaskClick }) {
 
   const tasksForDay = (day) =>
     tasks.filter((t) => t.due_date && isSameDay(new Date(t.due_date), day));
-
-  const noDateTasks = tasks.filter((t) => !t.due_date);
 
   const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -113,14 +124,14 @@ export default function CalendarView({ tasks, members, onTaskClick }) {
                 key={day.toISOString()}
                 className={`bg-app-bg p-1.5 min-h-[90px] transition-colors
                   ${inMonth ? '' : 'opacity-30'}
-                  ${todayFlag ? 'bg-violet-950/40' : 'hover:bg-app-card/60'}
+                  ${todayFlag ? 'bg-brand-primary/40' : 'hover:bg-app-card/60'}
                 `}
               >
                 {/* Day number */}
                 <div className="flex items-center justify-end mb-1">
                   <span
                     className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full
-                      ${todayFlag ? 'bg-violet-600 text-white' : 'text-slate-400'}`}
+                      ${todayFlag ? 'bg-brand-accent text-white' : 'text-slate-400'}`}
                   >
                     {format(day, 'd')}
                   </span>
@@ -128,7 +139,13 @@ export default function CalendarView({ tasks, members, onTaskClick }) {
 
                 {/* Tasks (max 3, then +N) */}
                 {dayTasks.slice(0, 3).map((t) => (
-                  <TaskChip key={t.taskId} task={t} members={members} onClick={onTaskClick} />
+                  <TaskChip
+                    key={t.taskId}
+                    task={t}
+                    members={members}
+                    onClick={onTaskClick}
+                    onStatusChange={onStatusChange}
+                  />
                 ))}
                 {dayTasks.length > 3 && (
                   <span className="text-xs text-slate-500 pl-1">+{dayTasks.length - 3} more</span>
@@ -137,27 +154,6 @@ export default function CalendarView({ tasks, members, onTaskClick }) {
             );
           })}
         </div>
-
-        {/* Tasks without due date */}
-        {noDateTasks.length > 0 && (
-          <div className="mt-4 bg-app-card border border-app-border rounded-xl p-4">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-              No due date ({noDateTasks.length})
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {noDateTasks.map((t) => (
-                <button
-                  key={t.taskId}
-                  onClick={() => onTaskClick(t)}
-                  className="flex items-center gap-1.5 bg-app-bg border border-app-border rounded-lg px-2.5 py-1 text-xs text-slate-300 hover:border-slate-500 transition"
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[t.status]}`} />
-                  {t.title}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
