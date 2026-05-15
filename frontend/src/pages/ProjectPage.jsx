@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { LayoutGrid, List, Plus, ArrowLeft, Users } from 'lucide-react';
+import { LayoutGrid, List, CalendarDays, Plus, ArrowLeft } from 'lucide-react';
 import { projectsApi, tasksApi } from '../api/supabase';
 import Layout from '../components/Layout';
 import KanbanBoard from '../components/KanbanBoard';
 import ListView from '../components/ListView';
+import CalendarView from '../components/CalendarView';
 import TaskDetail from '../components/TaskDetail';
 import CreateTaskModal from '../components/CreateTaskModal';
 
@@ -131,28 +132,21 @@ export default function ProjectPage() {
           <div className="flex items-center gap-3">
             {/* View Toggle */}
             <div className="flex bg-app-bg border border-app-border rounded-lg p-1">
-              <button
-                onClick={() => setView('board')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition ${
-                  view === 'board'
-                    ? 'bg-violet-600 text-white'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <LayoutGrid size={14} />
-                Board
-              </button>
-              <button
-                onClick={() => setView('list')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition ${
-                  view === 'list'
-                    ? 'bg-violet-600 text-white'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <List size={14} />
-                List
-              </button>
+              {[
+                { id: 'board',    icon: <LayoutGrid size={14} />,    label: 'Board' },
+                { id: 'list',     icon: <List size={14} />,          label: 'List' },
+                { id: 'calendar', icon: <CalendarDays size={14} />,  label: 'Calendar' },
+              ].map(({ id, icon, label }) => (
+                <button
+                  key={id}
+                  onClick={() => setView(id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition ${
+                    view === id ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {icon}{label}
+                </button>
+              ))}
             </div>
 
             {/* Members */}
@@ -182,7 +176,7 @@ export default function ProjectPage() {
         {/* Content */}
         <div className="flex flex-1 overflow-hidden">
           <div className="flex-1 overflow-auto p-6">
-            {view === 'board' ? (
+            {view === 'board' && (
               <KanbanBoard
                 tasks={tasks}
                 members={members}
@@ -190,13 +184,21 @@ export default function ProjectPage() {
                 onStatusChange={handleStatusChange}
                 onAddTask={openCreateTask}
               />
-            ) : (
+            )}
+            {view === 'list' && (
               <ListView
                 tasks={tasks}
                 members={members}
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
                 onAddTask={() => openCreateTask('todo')}
+              />
+            )}
+            {view === 'calendar' && (
+              <CalendarView
+                tasks={tasks}
+                members={members}
+                onTaskClick={setSelectedTask}
               />
             )}
           </div>
