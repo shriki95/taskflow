@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
-import { LayoutGrid, List, CalendarDays, Plus, ArrowLeft } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { LayoutGrid, List, CalendarDays, Plus, ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 import { projectsApi, tasksApi } from '../api/supabase';
 import Layout from '../components/Layout';
 import KanbanBoard from '../components/KanbanBoard';
@@ -9,6 +9,7 @@ import ListView from '../components/ListView';
 import CalendarView from '../components/CalendarView';
 import TaskDetail from '../components/TaskDetail';
 import CreateTaskModal from '../components/CreateTaskModal';
+import EditProjectModal from '../components/EditProjectModal';
 
 export default function ProjectPage() {
   const { projectId } = useParams();
@@ -21,6 +22,9 @@ export default function ProjectPage() {
   const [view, setView] = useState('board');
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [createStatus, setCreateStatus] = useState('todo');
+  const [showEditProject, setShowEditProject] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -61,6 +65,23 @@ export default function ProjectPage() {
     [tasks, projectId]
   );
 
+  const handleDueDateChange = useCallback(
+    async (taskId, newDate) => {
+      const original = tasks.find((t) => t.taskId === taskId)?.due_date;
+      setTasks((prev) =>
+        prev.map((t) => (t.taskId === taskId ? { ...t, due_date: newDate || null } : t))
+      );
+      try {
+        await tasksApi.update(projectId, taskId, { due_date: newDate || null });
+      } catch {
+        setTasks((prev) =>
+          prev.map((t) => (t.taskId === taskId ? { ...t, due_date: original } : t))
+        );
+      }
+    },
+    [tasks, projectId]
+  );
+
   const handleTaskUpdate = useCallback((updatedTask) => {
     setTasks((prev) =>
       prev.map((t) => (t.taskId === updatedTask.taskId ? updatedTask : t))
@@ -79,6 +100,22 @@ export default function ProjectPage() {
     setTasks((prev) => [...prev, newTask]);
     setShowCreateTask(false);
   }, []);
+
+  const handleProjectUpdate = useCallback((updatedProject) => {
+    setProject(updatedProject);
+    setShowEditProject(false);
+  }, []);
+
+  const handleDeleteProject = async () => {
+    setDeleting(true);
+    try {
+      await projectsApi.delete(projectId);
+      navigate('/dashboard');
+    } catch {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   const openCreateTask = (status = 'todo') => {
     setCreateStatus(status);
@@ -163,6 +200,24 @@ export default function ProjectPage() {
               ))}
             </div>
 
+            {/* Edit / Delete project */}
+            <div className="flex items-center gap-1 border-l border-app-border pl-3">
+              <button
+                onClick={() => setShowEditProject(true)}
+                className="p-2 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-app-card transition"
+                title="Edit project"
+              >
+                <Pencil size={15} />
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition"
+                title="Delete project"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+
             <button
               onClick={() => openCreateTask('todo')}
               className="flex items-center gap-2 bg-brand-accent hover:bg-brand-accent/90 text-white font-semibold px-3.5 py-2 rounded-lg transition text-sm"
@@ -182,6 +237,7 @@ export default function ProjectPage() {
                 members={members}
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
+                onDueDateChange={handleDueDateChange}
                 onAddTask={openCreateTask}
               />
             )}
@@ -191,6 +247,7 @@ export default function ProjectPage() {
                 members={members}
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
+                onDueDateChange={handleDueDateChange}
                 onAddTask={() => openCreateTask('todo')}
               />
             )}
@@ -230,6 +287,59 @@ export default function ProjectPage() {
             onClose={() => setShowCreateTask(false)}
             onCreate={handleTaskCreate}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Edit Project Modal */}
+      <AnimatePresence>
+        {showEditProject && project && (
+          <EditProjectModal
+            project={project}
+            onClose={() => setShowEditProject(false)}
+            onUpdate={handleProjectUpdate}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirm Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => !deleting && setShowDeleteConfirm(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative bg-app-card border border-app-border rounded-2xl p-6 w-full max-w-sm z-10"
+            >
+              <h3 className="text-lg font-semibold text-slate-100 mb-2">Delete project?</h3>
+              <p className="text-slate-400 text-sm mb-6">
+                <span className="text-slate-200 font-medium">"{project?.name}"</span> and all its tasks will be permanently deleted. This cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="flex-1 border border-app-border text-slate-400 hover:text-slate-200 py-2.5 rounded-lg transition font-medium disabled:opacity-40"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteProject}
+                  disabled={deleting}
+                  className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white py-2.5 rounded-lg transition font-semibold"
+                >
+                  {deleting ? 'Deleting…' : 'Delete'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </Layout>

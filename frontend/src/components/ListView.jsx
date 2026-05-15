@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { format, isPast, isToday } from 'date-fns';
 import { Calendar, Plus, Circle, CheckCircle2, Clock } from 'lucide-react';
 import Avatar from './Avatar';
@@ -14,7 +15,8 @@ const STATUS_ICON = {
   done: (props) => <CheckCircle2 size={16} className="text-emerald-400" {...props} />,
 };
 
-function TaskRow({ task, members, onClick, onStatusChange }) {
+function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange }) {
+  const [editingDate, setEditingDate] = useState(false);
   const priority = PRIORITY[task.priority] || PRIORITY.medium;
   const assignee = members.find((m) => m.userId === task.assignee_id);
   const dueDate = task.due_date ? new Date(task.due_date) : null;
@@ -23,9 +25,18 @@ function TaskRow({ task, members, onClick, onStatusChange }) {
 
   const handleToggleDone = (e) => {
     e.stopPropagation();
-    if (onStatusChange) {
-      onStatusChange(task.taskId, isDone ? 'todo' : 'done');
-    }
+    if (onStatusChange) onStatusChange(task.taskId, isDone ? 'todo' : 'done');
+  };
+
+  const handleDateClick = (e) => {
+    e.stopPropagation();
+    if (onDueDateChange) setEditingDate(true);
+  };
+
+  const handleDateChange = (e) => {
+    e.stopPropagation();
+    if (onDueDateChange) onDueDateChange(task.taskId, e.target.value || null);
+    setEditingDate(false);
   };
 
   const IconComponent = STATUS_ICON[task.status] || STATUS_ICON.todo;
@@ -52,25 +63,30 @@ function TaskRow({ task, members, onClick, onStatusChange }) {
       </td>
 
       <td className="py-3 pr-3 w-24 hidden sm:table-cell">
-        <span
-          className={`text-xs px-2 py-0.5 rounded-full font-medium ${priority.cls}`}
-        >
+        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priority.cls}`}>
           {priority.label}
         </span>
       </td>
 
-      <td className="py-3 pr-3 w-28 hidden md:table-cell">
-        {dueDate ? (
-          <span
-            className={`flex items-center gap-1 text-xs ${
-              isOverdue ? 'text-red-400' : 'text-slate-500'
-            }`}
+      <td className="py-3 pr-3 w-32 hidden md:table-cell" onClick={(e) => e.stopPropagation()}>
+        {editingDate ? (
+          <input
+            autoFocus
+            type="date"
+            defaultValue={task.due_date ? task.due_date.slice(0, 10) : ''}
+            onChange={handleDateChange}
+            onBlur={() => setEditingDate(false)}
+            className="bg-app-bg border border-brand-accent rounded px-1.5 py-0.5 text-xs text-slate-300 [color-scheme:dark] focus:outline-none w-28"
+          />
+        ) : (
+          <button
+            onClick={handleDateClick}
+            className={`flex items-center gap-1 text-xs rounded px-1 py-0.5 transition
+              ${isOverdue ? 'text-red-400 hover:bg-red-400/10' : dueDate ? 'text-slate-500 hover:text-slate-300 hover:bg-app-sidebar' : 'text-slate-700 hover:text-slate-500 hover:bg-app-sidebar'}`}
           >
             <Calendar size={12} />
-            {format(dueDate, 'MMM d, yyyy')}
-          </span>
-        ) : (
-          <span className="text-slate-700 text-xs">—</span>
+            {dueDate ? format(dueDate, 'MMM d, yyyy') : <span className="opacity-0 group-hover:opacity-100">Add date</span>}
+          </button>
         )}
       </td>
 
@@ -103,7 +119,7 @@ function SectionHeader({ label, count, dot }) {
   );
 }
 
-export default function ListView({ tasks, members, onTaskClick, onStatusChange, onAddTask }) {
+export default function ListView({ tasks, members, onTaskClick, onStatusChange, onDueDateChange, onAddTask }) {
   const sections = [
     { id: 'todo', label: 'To Do', dot: 'bg-slate-500' },
     { id: 'in_progress', label: 'In Progress', dot: 'bg-blue-500' },
@@ -148,6 +164,7 @@ export default function ListView({ tasks, members, onTaskClick, onStatusChange, 
                     members={members}
                     onClick={() => onTaskClick(task)}
                     onStatusChange={onStatusChange}
+                    onDueDateChange={onDueDateChange}
                   />
                 ))}
               </>

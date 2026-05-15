@@ -23,7 +23,7 @@ const COLUMNS = [
   { id: 'done', label: 'Done', dot: 'bg-emerald-500' },
 ];
 
-function SortableCard({ task, members, onClick, onStatusChange }) {
+function SortableCard({ task, members, onClick, onStatusChange, onDueDateChange }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: task.taskId });
 
@@ -38,12 +38,12 @@ function SortableCard({ task, members, onClick, onStatusChange }) {
       {...attributes}
       {...listeners}
     >
-      <TaskCard task={task} members={members} onClick={onClick} onStatusChange={onStatusChange} />
+      <TaskCard task={task} members={members} onClick={onClick} onStatusChange={onStatusChange} onDueDateChange={onDueDateChange} />
     </div>
   );
 }
 
-function Column({ col, tasks, members, onTaskClick, onAddTask, onStatusChange }) {
+function Column({ col, tasks, members, onTaskClick, onAddTask, onStatusChange, onDueDateChange }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id });
 
   return (
@@ -86,6 +86,7 @@ function Column({ col, tasks, members, onTaskClick, onAddTask, onStatusChange })
               members={members}
               onClick={() => onTaskClick(task)}
               onStatusChange={onStatusChange}
+              onDueDateChange={onDueDateChange}
             />
           ))}
         </SortableContext>
@@ -100,7 +101,7 @@ function Column({ col, tasks, members, onTaskClick, onAddTask, onStatusChange })
   );
 }
 
-export default function KanbanBoard({ tasks, members, onTaskClick, onStatusChange, onAddTask }) {
+export default function KanbanBoard({ tasks, members, onTaskClick, onStatusChange, onDueDateChange, onAddTask }) {
   const [activeTask, setActiveTask] = useState(null);
 
   const sensors = useSensors(
@@ -150,6 +151,7 @@ export default function KanbanBoard({ tasks, members, onTaskClick, onStatusChang
             onTaskClick={onTaskClick}
             onAddTask={onAddTask}
             onStatusChange={onStatusChange}
+            onDueDateChange={onDueDateChange}
           />
         ))}
       </div>

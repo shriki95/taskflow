@@ -3,11 +3,12 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect } from 'react';
 import {
-  CheckSquare, LayoutDashboard, LogOut, ChevronDown, FolderKanban,
+  CheckSquare, LayoutDashboard, LogOut, ChevronDown, FolderKanban, KeyRound,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { projectsApi } from '../api/supabase';
 import Avatar from './Avatar';
+import ChangePasswordModal from './ChangePasswordModal';
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
@@ -15,6 +16,7 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   useEffect(() => {
     projectsApi.list().then(({ data }) => setProjects(data.projects));
@@ -100,6 +102,13 @@ export default function Layout({ children }) {
                   <p className="text-xs text-slate-500 truncate">{user?.email}</p>
                 </div>
                 <button
+                  onClick={() => { setUserMenuOpen(false); setShowChangePassword(true); }}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-slate-400 hover:text-slate-200 hover:bg-app-bg transition"
+                >
+                  <KeyRound size={14} />
+                  Change password
+                </button>
+                <button
                   onClick={handleLogout}
                   className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition"
                 >
@@ -114,6 +123,12 @@ export default function Layout({ children }) {
 
       {/* Main content */}
       <main className="flex-1 overflow-hidden flex flex-col">{children}</main>
+
+      <AnimatePresence>
+        {showChangePassword && (
+          <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

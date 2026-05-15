@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Calendar, CheckCircle2, Circle } from 'lucide-react';
 import { format, isPast, isToday } from 'date-fns';
 import Avatar from './Avatar';
@@ -8,7 +9,8 @@ const PRIORITY = {
   low: { label: 'Low', cls: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' },
 };
 
-export default function TaskCard({ task, members = [], onClick, onStatusChange, dragging = false }) {
+export default function TaskCard({ task, members = [], onClick, onStatusChange, onDueDateChange, dragging = false }) {
+  const [editingDate, setEditingDate] = useState(false);
   const priority = PRIORITY[task.priority] || PRIORITY.medium;
   const assignee = members.find((m) => m.userId === task.assignee_id);
   const dueDate = task.due_date ? new Date(task.due_date) : null;
@@ -17,9 +19,18 @@ export default function TaskCard({ task, members = [], onClick, onStatusChange, 
 
   const handleToggleDone = (e) => {
     e.stopPropagation();
-    if (onStatusChange) {
-      onStatusChange(task.taskId, isDone ? 'todo' : 'done');
-    }
+    if (onStatusChange) onStatusChange(task.taskId, isDone ? 'todo' : 'done');
+  };
+
+  const handleDateClick = (e) => {
+    e.stopPropagation();
+    if (onDueDateChange) setEditingDate(true);
+  };
+
+  const handleDateChange = (e) => {
+    e.stopPropagation();
+    if (onDueDateChange) onDueDateChange(task.taskId, e.target.value || null);
+    setEditingDate(false);
   };
 
   return (
@@ -52,29 +63,34 @@ export default function TaskCard({ task, members = [], onClick, onStatusChange, 
 
       {/* Footer */}
       <div className="flex items-center justify-between gap-2">
-        <span
-          className={`text-xs px-2 py-0.5 rounded-full border font-medium ${priority.cls}`}
-        >
+        <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${priority.cls}`}>
           {priority.label}
         </span>
 
         <div className="flex items-center gap-2">
-          {dueDate && (
-            <span
-              className={`flex items-center gap-1 text-xs ${
-                isOverdue ? 'text-red-400' : 'text-slate-500'
-              }`}
+          {editingDate ? (
+            <input
+              autoFocus
+              type="date"
+              defaultValue={task.due_date ? task.due_date.slice(0, 10) : ''}
+              onChange={handleDateChange}
+              onBlur={() => setEditingDate(false)}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-app-bg border border-brand-accent rounded px-1.5 py-0.5 text-xs text-slate-300 [color-scheme:dark] w-30 focus:outline-none"
+            />
+          ) : (
+            <button
+              onClick={handleDateClick}
+              className={`flex items-center gap-1 text-xs rounded px-1 py-0.5 transition
+                ${isOverdue ? 'text-red-400 hover:bg-red-400/10' : dueDate ? 'text-slate-500 hover:text-slate-300 hover:bg-app-sidebar' : 'text-slate-700 hover:text-slate-500 hover:bg-app-sidebar'}`}
+              title={onDueDateChange ? 'Click to change due date' : undefined}
             >
               <Calendar size={11} />
-              {format(dueDate, 'MMM d')}
-            </span>
+              {dueDate ? format(dueDate, 'MMM d') : <span className="opacity-0 group-hover:opacity-100">Add date</span>}
+            </button>
           )}
           {assignee && (
-            <Avatar
-              name={assignee.name}
-              color={assignee.avatar_color}
-              size="xs"
-            />
+            <Avatar name={assignee.name} color={assignee.avatar_color} size="xs" />
           )}
         </div>
       </div>
