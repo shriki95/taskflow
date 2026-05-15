@@ -116,7 +116,7 @@ export const projectsApi = {
       .select('project_id, projects(*)')
       .eq('user_id', user.id);
     if (error) wrap(error);
-    const projects = (data || []).map((m) => fmtProject(m.projects)).filter(Boolean);
+    const projects = (data || []).map((m) => m.projects ? fmtProject(m.projects) : null).filter(Boolean);
     return { data: { projects } };
   },
 
