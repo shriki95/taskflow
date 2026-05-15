@@ -111,6 +111,7 @@ export const authApi = {
 export const projectsApi = {
   list: async () => {
     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: { projects: [] } };
     const { data, error } = await supabase
       .from('project_members')
       .select('project_id, projects(*)')
@@ -122,14 +123,17 @@ export const projectsApi = {
 
   create: async ({ name, description = '', color = '#7c3aed' }) => {
     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) wrap(new Error('Not authenticated'));
     const { data, error } = await supabase
       .from('projects')
       .insert({ name, description, color, owner_id: user.id })
       .select().single();
     if (error) wrap(error);
-    await supabase.from('project_members').insert({
+    if (!data) wrap(new Error('Failed to read project after create'));
+    const { error: memberErr } = await supabase.from('project_members').insert({
       project_id: data.id, user_id: user.id, role: 'owner',
     });
+    if (memberErr) wrap(memberErr);
     return { data: fmtProject(data) };
   },
 
