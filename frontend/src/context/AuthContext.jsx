@@ -26,7 +26,12 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // onAuthStateChange fires immediately with current session state (replaces getSession)
+    let settled = false;
+    const done = () => { if (!settled) { settled = true; setLoading(false); } };
+
+    // Safety net: never hang more than 4 seconds
+    const timeout = setTimeout(done, 4000);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
@@ -39,11 +44,12 @@ export function AuthProvider({ children }) {
         } else {
           setUser(null);
         }
-        setLoading(false);
+        clearTimeout(timeout);
+        done();
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => { subscription.unsubscribe(); clearTimeout(timeout); };
   }, []);
 
   const login = async (email, password) => {
