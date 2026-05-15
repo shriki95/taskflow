@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(aws --version)",
+      "Bash(aws sts *)",
+      "PowerShell(aws --version 2>&1)",
+      "PowerShell(aws sts get-caller-identity 2>&1)",
+      "PowerShell(winget --version 2>&1)",
+      "PowerShell(winget install Amazon.AWSCLI --accept-source-agreements --accept-package-agreements --silent 2>&1)",
+      "PowerShell(gh --version 2>&1)",
+      "PowerShell(gh auth status 2>&1)",
+      "PowerShell(winget install GitHub.cli --accept-source-agreements --accept-package-agreements --silent 2>&1)"
+    ]
+  }
+}

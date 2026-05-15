@@ -1,0 +1,257 @@
+service: task-management
+
+frameworkVersion: '3'
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: false
+    slim: true
+
+provider:
+  name: aws
+  runtime: python3.11
+  region: ${opt:region, 'us-east-1'}
+  stage: ${opt:stage, 'dev'}
+  memorySize: 256
+  timeout: 10
+  httpApi:
+    cors:
+      allowedOrigins:
+        - '*'
+      allowedHeaders:
+        - Content-Type
+        - Authorization
+      allowedMethods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+  environment:
+    TABLE_NAME: !Ref TasksTable
+    JWT_SECRET: ${env:JWT_SECRET, 'change-me-before-production'}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:Query
+            - dynamodb:Scan
+          Resource:
+            - !GetAtt TasksTable.Arn
+            - !Sub '${TasksTable.Arn}/index/*'
+
+functions:
+  # ── Auth ──────────────────────────────────────────────────────────────────
+  signup:
+    handler: handlers.auth.signup
+    events:
+      - httpApi:
+          path: /auth/signup
+          method: POST
+
+  login:
+    handler: handlers.auth.login
+    events:
+      - httpApi:
+          path: /auth/login
+          method: POST
+
+  getMe:
+    handler: handlers.auth.get_me
+    events:
+      - httpApi:
+          path: /auth/me
+          method: GET
+
+  # ── Projects ──────────────────────────────────────────────────────────────
+  listProjects:
+    handler: handlers.projects.list_projects
+    events:
+      - httpApi:
+          path: /projects
+          method: GET
+
+  createProject:
+    handler: handlers.projects.create_project
+    events:
+      - httpApi:
+          path: /projects
+          method: POST
+
+  getProject:
+    handler: handlers.projects.get_project
+    events:
+      - httpApi:
+          path: /projects/{projectId}
+          method: GET
+
+  updateProject:
+    handler: handlers.projects.update_project
+    events:
+      - httpApi:
+          path: /projects/{projectId}
+          method: PUT
+
+  deleteProject:
+    handler: handlers.projects.delete_project
+    events:
+      - httpApi:
+          path: /projects/{projectId}
+          method: DELETE
+
+  listProjectMembers:
+    handler: handlers.projects.list_members
+    events:
+      - httpApi:
+          path: /projects/{projectId}/members
+          method: GET
+
+  addProjectMember:
+    handler: handlers.projects.add_member
+    events:
+      - httpApi:
+          path: /projects/{projectId}/members
+          method: POST
+
+  # ── Tasks ─────────────────────────────────────────────────────────────────
+  listTasks:
+    handler: handlers.tasks.list_tasks
+    events:
+      - httpApi:
+          path: /projects/{projectId}/tasks
+          method: GET
+
+  createTask:
+    handler: handlers.tasks.create_task
+    events:
+      - httpApi:
+          path: /projects/{projectId}/tasks
+          method: POST
+
+  getTask:
+    handler: handlers.tasks.get_task
+    events:
+      - httpApi:
+          path: /projects/{projectId}/tasks/{taskId}
+          method: GET
+
+  updateTask:
+    handler: handlers.tasks.update_task
+    events:
+      - httpApi:
+          path: /projects/{projectId}/tasks/{taskId}
+          method: PUT
+
+  deleteTask:
+    handler: handlers.tasks.delete_task
+    events:
+      - httpApi:
+          path: /projects/{projectId}/tasks/{taskId}
+          method: DELETE
+
+  # ── Subtasks ──────────────────────────────────────────────────────────────
+  listSubtasks:
+    handler: handlers.subtasks.list_subtasks
+    events:
+      - httpApi:
+          path: /projects/{projectId}/tasks/{taskId}/subtasks
+          method: GET
+
+  createSubtask:
+    handler: handlers.subtasks.create_subtask
+    events:
+      - httpApi:
+          path: /projects/{projectId}/tasks/{taskId}/subtasks
+          method: POST
+
+  updateSubtask:
+    handler: handlers.subtasks.update_subtask
+    events:
+      - httpApi:
+          path: /projects/{projectId}/tasks/{taskId}/subtasks/{subtaskId}
+          method: PUT
+
+  deleteSubtask:
+    handler: handlers.subtasks.delete_subtask
+    events:
+      - httpApi:
+          path: /projects/{projectId}/tasks/{taskId}/subtasks/{subtaskId}
+          method: DELETE
+
+  # ── Comments ──────────────────────────────────────────────────────────────
+  listComments:
+    handler: handlers.comments.list_comments
+    events:
+      - httpApi:
+          path: /projects/{projectId}/tasks/{taskId}/comments
+          method: GET
+
+  createComment:
+    handler: handlers.comments.create_comment
+    events:
+      - httpApi:
+          path: /projects/{projectId}/tasks/{taskId}/comments
+          method: POST
+
+  # ── Users ─────────────────────────────────────────────────────────────────
+  listUsers:
+    handler: handlers.users.list_users
+    events:
+      - httpApi:
+          path: /users
+          method: GET
+
+# ── DynamoDB Single-Table Design ────────────────────────────────────────────
+#
+#  Entity       PK                  SK                 GSI1PK            GSI1SK
+#  ──────────── ─────────────────── ────────────────── ──────────────── ──────────────────
+#  User         USER#{userId}       PROFILE            EMAIL#{email}    USER#{userId}
+#  Project      PROJECT#{id}        METADATA           -                -
+#  Membership   PROJECT#{id}        MEMBER#{userId}    USER#{userId}    PROJECT#{id}
+#  Task         PROJECT#{id}        TASK#{id}          -                -
+#  Subtask      TASK#{id}           SUBTASK#{id}       -                -
+#  Comment      TASK#{id}           COMMENT#{id}       -                -
+#
+resources:
+  Resources:
+    TasksTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-${self:provider.stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: PK
+            AttributeType: S
+          - AttributeName: SK
+            AttributeType: S
+          - AttributeName: gsi1pk
+            AttributeType: S
+          - AttributeName: gsi1sk
+            AttributeType: S
+        KeySchema:
+          - AttributeName: PK
+            KeyType: HASH
+          - AttributeName: SK
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: GSI1
+            KeySchema:
+              - AttributeName: gsi1pk
+                KeyType: HASH
+              - AttributeName: gsi1sk
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+  Outputs:
+    HttpApiUrl:
+      Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com'
+      Description: Paste this URL into frontend/.env as VITE_API_URL

@@ -1,0 +1,9 @@
+{
+  "name": "task-management-backend",
+  "version": "1.0.0",
+  "description": "Serverless Task Management Backend — AWS Lambda + DynamoDB",
+  "devDependencies": {
+    "serverless": "^3.38.0",
+    "serverless-python-requirements": "^6.1.1"
+  }
+}
