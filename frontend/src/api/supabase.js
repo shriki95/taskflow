@@ -163,14 +163,21 @@ export const projectsApi = {
   members: async (projectId) => {
     const { data, error } = await supabase
       .from('project_members')
-      .select('user_id, role, profiles(name, avatar_color)')
+      .select('user_id, role')
       .eq('project_id', projectId);
     if (error) wrap(error);
+    const userIds = (data || []).map((m) => m.user_id);
+    let profileMap = {};
+    if (userIds.length) {
+      const { data: profiles } = await supabase
+        .from('profiles').select('id, name, avatar_color').in('id', userIds);
+      (profiles || []).forEach((p) => { profileMap[p.id] = p; });
+    }
     const members = (data || []).map((m) => ({
       userId: m.user_id,
-      name: m.profiles?.name || 'Unknown',
+      name: profileMap[m.user_id]?.name || 'Unknown',
       email: '',
-      avatar_color: m.profiles?.avatar_color || '#7c3aed',
+      avatar_color: profileMap[m.user_id]?.avatar_color || '#7c3aed',
       role: m.role,
     }));
     return { data: { members } };
@@ -284,18 +291,22 @@ export const subtasksApi = {
 export const commentsApi = {
   list: async (projectId, taskId) => {
     const { data, error } = await supabase
-      .from('comments')
-      .select('*, profiles(name, avatar_color)')
-      .eq('task_id', taskId)
-      .order('created_at');
+      .from('comments').select('*').eq('task_id', taskId).order('created_at');
     if (error) wrap(error);
+    const authorIds = [...new Set((data || []).map((c) => c.author_id))];
+    let profileMap = {};
+    if (authorIds.length) {
+      const { data: profiles } = await supabase
+        .from('profiles').select('id, name, avatar_color').in('id', authorIds);
+      (profiles || []).forEach((p) => { profileMap[p.id] = p; });
+    }
     const comments = (data || []).map((c) => ({
       commentId: c.id,
       taskId: c.task_id,
       text: c.text,
       author_id: c.author_id,
-      author_name: c.profiles?.name || 'Unknown',
-      author_color: c.profiles?.avatar_color || '#7c3aed',
+      author_name: profileMap[c.author_id]?.name || 'Unknown',
+      author_color: profileMap[c.author_id]?.avatar_color || '#7c3aed',
       created_at: c.created_at,
     }));
     return { data: { comments } };
@@ -304,18 +315,18 @@ export const commentsApi = {
   create: async (projectId, taskId, { text }) => {
     const { data: { user } } = await supabase.auth.getUser();
     const { data, error } = await supabase
-      .from('comments')
-      .insert({ task_id: taskId, text, author_id: user.id })
-      .select('*, profiles(name, avatar_color)').single();
+      .from('comments').insert({ task_id: taskId, text, author_id: user.id }).select().single();
     if (error) wrap(error);
+    const { data: profile } = await supabase
+      .from('profiles').select('name, avatar_color').eq('id', user.id).single();
     return {
       data: {
         commentId: data.id,
         taskId: data.task_id,
         text: data.text,
         author_id: data.author_id,
-        author_name: data.profiles?.name || 'Unknown',
-        author_color: data.profiles?.avatar_color || '#7c3aed',
+        author_name: profile?.name || 'Unknown',
+        author_color: profile?.avatar_color || '#7c3aed',
         created_at: data.created_at,
       },
     };

@@ -21,6 +21,7 @@ export default function ProjectPage() {
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [createStatus, setCreateStatus] = useState('todo');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -33,8 +34,8 @@ export default function ProjectPage() {
         setProject(projRes.data);
         setTasks(tasksRes.data.tasks);
         setMembers(membersRes.data.members);
-      } catch {
-        navigate('/dashboard');
+      } catch (err) {
+        setError(err?.response?.data?.error || 'Failed to load project');
       } finally {
         setLoading(false);
       }
@@ -88,6 +89,19 @@ export default function ProjectPage() {
       <Layout>
         <div className="flex items-center justify-center h-full">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-600 border-t-transparent" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center justify-center h-full gap-4">
+          <p className="text-red-400">{error}</p>
+          <button onClick={() => navigate('/dashboard')} className="text-violet-400 hover:underline text-sm">
+            Back to dashboard
+          </button>
         </div>
       </Layout>
     );
