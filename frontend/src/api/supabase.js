@@ -14,13 +14,14 @@ const pickColor = (seed) =>
   AVATAR_COLORS[Math.abs([...seed].reduce((a, c) => a + c.charCodeAt(0), 0)) % AVATAR_COLORS.length];
 
 // ── Data formatters ───────────────────────────────────────────
-const fmtProject = (p) => ({
+const fmtProject = (p, memberStatus = 'accepted') => ({
   projectId: p.id,
   name: p.name,
   description: p.description || '',
   color: p.color || '#7c3aed',
   owner_id: p.owner_id,
   created_at: p.created_at,
+  memberStatus,
 });
 
 const fmtTask = (t) => ({
@@ -129,10 +130,12 @@ export const projectsApi = {
     if (!user) return { data: { projects: [] } };
     const { data, error } = await supabase
       .from('project_members')
-      .select('project_id, projects(*)')
+      .select('project_id, role, status, projects(*)')
       .eq('user_id', user.id);
     if (error) wrap(error);
-    const projects = (data || []).map((m) => m.projects ? fmtProject(m.projects) : null).filter(Boolean);
+    const projects = (data || [])
+      .map((m) => m.projects ? fmtProject(m.projects, m.status || 'accepted') : null)
+      .filter(Boolean);
     return { data: { projects } };
   },
 
@@ -178,7 +181,7 @@ export const projectsApi = {
   members: async (projectId) => {
     const { data, error } = await supabase
       .from('project_members')
-      .select('user_id, role')
+      .select('user_id, role, status')
       .eq('project_id', projectId);
     if (error) wrap(error);
     const userIds = (data || []).map((m) => m.user_id);
@@ -194,6 +197,7 @@ export const projectsApi = {
       email: '',
       avatar_color: profileMap[m.user_id]?.avatar_color || '#7c3aed',
       role: m.role,
+      status: m.status || 'accepted',
     }));
     return { data: { members } };
   },
@@ -204,6 +208,57 @@ export const projectsApi = {
     });
     if (error) wrap(error);
     return { data: { message: 'Member added' } };
+  },
+
+  invite: async (projectId, userId) => {
+    const { error } = await supabase.from('project_members').insert({
+      project_id: projectId, user_id: userId, role: 'member', status: 'pending',
+    });
+    if (error) wrap(error);
+    return { data: { message: 'Invited' } };
+  },
+
+  acceptInvite: async (projectId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from('project_members')
+      .update({ status: 'accepted' })
+      .eq('project_id', projectId)
+      .eq('user_id', user.id);
+    if (error) wrap(error);
+    return { data: { message: 'Accepted' } };
+  },
+
+  declineInvite: async (projectId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from('project_members')
+      .delete()
+      .eq('project_id', projectId)
+      .eq('user_id', user.id);
+    if (error) wrap(error);
+    return { data: { message: 'Declined' } };
+  },
+
+  duplicate: async (id) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) wrap(new Error('Not authenticated'));
+    const { data: src, error: srcErr } = await supabase.from('projects').select('*').eq('id', id).single();
+    if (srcErr) wrap(srcErr);
+    const { data: newProject, error: projErr } = await supabase
+      .from('projects')
+      .insert({ name: src.name + ' (copy)', description: src.description, color: src.color, owner_id: user.id })
+      .select().single();
+    if (projErr) wrap(projErr);
+    await supabase.from('project_members').insert({ project_id: newProject.id, user_id: user.id, role: 'owner' });
+    const { data: tasks } = await supabase.from('tasks').select('*').eq('project_id', id);
+    if (tasks && tasks.length) {
+      const newTasks = tasks.map(({ id: _id, created_at: _ca, updated_at: _ua, ...t }) => ({
+        ...t, project_id: newProject.id, created_by: user.id,
+      }));
+      await supabase.from('tasks').insert(newTasks);
+    }
+    return { data: fmtProject(newProject) };
   },
 };
 
@@ -406,14 +461,17 @@ export const taskGroupsApi = {
 // ══════════════════════════════════════════════════════════════
 export const usersApi = {
   list: async () => {
+    const { data: { user: me } } = await supabase.auth.getUser();
     const { data, error } = await supabase.from('profiles').select('id, name, avatar_color');
     if (error) wrap(error);
-    const users = (data || []).map((p) => ({
-      userId: p.id,
-      name: p.name,
-      email: '',
-      avatar_color: p.avatar_color || '#7c3aed',
-    }));
+    const users = (data || [])
+      .filter((p) => p.id !== me?.id)
+      .map((p) => ({
+        userId: p.id,
+        name: p.name,
+        email: '',
+        avatar_color: p.avatar_color || '#7c3aed',
+      }));
     return { data: { users } };
   },
 };
