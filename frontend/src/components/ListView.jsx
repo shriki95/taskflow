@@ -249,7 +249,7 @@ export default function ListView({
     });
 
   return (
-    <div className="bg-app-card -mx-3 sm:mx-0 sm:border sm:border-app-border sm:rounded-xl overflow-hidden">
+    <div className="bg-app-card border border-app-border rounded-xl overflow-hidden">
       <table className="w-full">
         <thead>
           <tr className="border-b border-app-border">
