@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, FolderKanban, X, AlertCircle } from 'lucide-react';
-import { projectsApi } from '../api/supabase';
+import { Plus, FolderKanban, X, AlertCircle, CheckCircle2, Clock, Circle } from 'lucide-react';
+import { projectsApi, tasksApi } from '../api/supabase';
 import Layout from '../components/Layout';
 
 const PROJECT_COLORS = [
@@ -78,9 +78,7 @@ function CreateProjectModal({ onClose, onCreate }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Description
-            </label>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -106,11 +104,7 @@ function CreateProjectModal({ onClose, onCreate }) {
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 border border-app-border text-slate-400 hover:text-slate-200 py-2.5 rounded-lg transition font-medium"
-            >
+            <button type="button" onClick={onClose} className="flex-1 border border-app-border text-slate-400 hover:text-slate-200 py-2.5 rounded-lg transition font-medium">
               Cancel
             </button>
             <button
@@ -127,33 +121,88 @@ function CreateProjectModal({ onClose, onCreate }) {
   );
 }
 
-function ProjectCard({ project, onClick }) {
+function ProjectCard({ project, stats, onClick }) {
+  const { total, done, inProgress } = stats || { total: 0, done: 0, inProgress: 0 };
+  const todo       = total - done - inProgress;
+  const pct        = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  // Font size for the percentage number scales with task volume
+  const pctSize = total >= 20 ? 'text-2xl' : total >= 8 ? 'text-3xl' : 'text-4xl';
+
   return (
     <motion.div
-      whileHover={{ y: -2 }}
+      whileHover={{ y: -3, scale: 1.01 }}
       onClick={onClick}
-      className="bg-app-card border border-app-border rounded-xl p-5 cursor-pointer hover:border-slate-600 transition-all group"
+      className="bg-app-card border border-app-border rounded-2xl p-5 cursor-pointer hover:border-slate-600 transition-all group flex flex-col gap-4 overflow-hidden relative"
+      style={{ borderTop: `3px solid ${project.color}` }}
     >
-      <div className="flex items-start gap-3 mb-3">
+      {/* Top: icon + name */}
+      <div className="flex items-start gap-3">
         <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
           style={{ backgroundColor: project.color + '22', border: `1px solid ${project.color}44` }}
         >
-          <FolderKanban size={18} style={{ color: project.color }} />
+          <FolderKanban size={16} style={{ color: project.color }} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-slate-100 truncate group-hover:text-brand-accent transition">
+          <h3 className="font-semibold text-slate-100 truncate group-hover:text-white transition leading-tight">
             {project.name}
           </h3>
           {project.description && (
-            <p className="text-sm text-slate-500 truncate mt-0.5">{project.description}</p>
+            <p className="text-xs text-slate-500 truncate mt-0.5">{project.description}</p>
           )}
         </div>
       </div>
-      <div
-        className="h-1 rounded-full w-full mt-2 opacity-60"
-        style={{ backgroundColor: project.color }}
-      />
+
+      {/* Stats row */}
+      {total > 0 ? (
+        <>
+          {/* Progress bar + percentage */}
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <div className="flex justify-between items-baseline mb-1.5">
+                <span className="text-xs text-slate-500">{done} of {total} tasks</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-app-bg overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${pct}%`, backgroundColor: project.color }}
+                />
+              </div>
+            </div>
+            <span
+              className={`font-bold leading-none flex-shrink-0 ${pctSize}`}
+              style={{ color: project.color }}
+            >
+              {pct}<span className="text-sm font-semibold opacity-60">%</span>
+            </span>
+          </div>
+
+          {/* Status chips */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {done > 0 && (
+              <span className="flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">
+                <CheckCircle2 size={10} />
+                {done} done
+              </span>
+            )}
+            {inProgress > 0 && (
+              <span className="flex items-center gap-1 text-[11px] text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-full">
+                <Clock size={10} />
+                {inProgress} active
+              </span>
+            )}
+            {todo > 0 && (
+              <span className="flex items-center gap-1 text-[11px] text-slate-500 bg-slate-700/40 px-2 py-0.5 rounded-full">
+                <Circle size={10} />
+                {todo} to do
+              </span>
+            )}
+          </div>
+        </>
+      ) : (
+        <p className="text-xs text-slate-600 italic">No tasks yet</p>
+      )}
     </motion.div>
   );
 }
@@ -161,18 +210,34 @@ function ProjectCard({ project, onClick }) {
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
+  const [statsMap, setStatsMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
-    projectsApi
-      .list()
-      .then(({ data }) => setProjects(data.projects))
-      .finally(() => setLoading(false));
+    projectsApi.list().then(async ({ data }) => {
+      const list = data.projects;
+      setProjects(list);
+
+      // Fetch tasks for all projects in parallel
+      const results = await Promise.all(
+        list.map((p) => tasksApi.list(p.projectId).then(({ data }) => ({ id: p.projectId, tasks: data.tasks })).catch(() => ({ id: p.projectId, tasks: [] })))
+      );
+      const map = {};
+      results.forEach(({ id, tasks }) => {
+        map[id] = {
+          total:      tasks.length,
+          done:       tasks.filter((t) => t.status === 'done').length,
+          inProgress: tasks.filter((t) => t.status === 'in_progress').length,
+        };
+      });
+      setStatsMap(map);
+    }).finally(() => setLoading(false));
   }, []);
 
   const handleCreate = (project) => {
     setProjects((prev) => [...prev, project]);
+    setStatsMap((prev) => ({ ...prev, [project.projectId]: { total: 0, done: 0, inProgress: 0 } }));
     setShowCreate(false);
   };
 
@@ -217,11 +282,12 @@ export default function DashboardPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {projects.map((p) => (
               <ProjectCard
                 key={p.projectId}
                 project={p}
+                stats={statsMap[p.projectId]}
                 onClick={() => navigate(`/projects/${p.projectId}`)}
               />
             ))}
