@@ -6,9 +6,9 @@ import {
 import { ChevronLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
 import { isRTL, formatDuration } from '../utils/text';
 
-const PRIORITY_BAR    = { high: 'bg-red-500',    medium: 'bg-amber-500',    low: 'bg-emerald-500'    };
-const PRIORITY_BORDER = { high: 'border-l-red-500', medium: 'border-l-amber-500', low: 'border-l-emerald-500' };
-const PRIORITY_BG     = { high: 'bg-red-500/5',  medium: 'bg-amber-500/5',  low: 'bg-emerald-500/5'  };
+const PRIORITY_BAR    = { high: 'bg-red-500',    medium: 'bg-amber-500',    low: 'bg-blue-500'    };
+const PRIORITY_BORDER = { high: 'border-l-red-500', medium: 'border-l-amber-500', low: 'border-l-blue-500' };
+const PRIORITY_BG     = { high: 'bg-red-500/5',  medium: 'bg-amber-500/5',  low: 'bg-blue-500/5'  };
 
 const SPAN_BAR_H = 28;
 

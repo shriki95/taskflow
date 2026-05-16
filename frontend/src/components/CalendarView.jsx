@@ -7,7 +7,7 @@ import {
 import { ChevronLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
 import { isRTL } from '../utils/text';
 
-const PRIORITY_BAR = { high: 'bg-red-500', medium: 'bg-amber-500', low: 'bg-emerald-500' };
+const PRIORITY_BAR = { high: 'bg-red-500', medium: 'bg-amber-500', low: 'bg-blue-500' };
 
 const SPAN_BAR_H = 22;
 

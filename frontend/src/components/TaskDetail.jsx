@@ -280,12 +280,12 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
             <button
               onClick={() => updateField({ status: 'todo' })}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
-                bg-emerald-500/10 border border-emerald-500/20 text-emerald-400/80
-                hover:bg-app-card hover:border-slate-600 hover:text-slate-400 transition"
+                bg-slate-700/40 border border-slate-600/40 text-slate-400
+                hover:bg-app-card hover:border-slate-500 hover:text-slate-300 transition"
             >
-              <CheckCircle2 size={13} />
+              <CheckCircle2 size={13} className="text-slate-500" />
               Completed
-              <RotateCcw size={11} className="opacity-50 ml-0.5" />
+              <RotateCcw size={11} className="opacity-40 ml-0.5" />
             </button>
           ) : (
             <button
