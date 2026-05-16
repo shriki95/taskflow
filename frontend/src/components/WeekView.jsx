@@ -10,6 +10,8 @@ const PRIORITY_BAR    = { high: 'bg-red-500',    medium: 'bg-amber-500',    low:
 const PRIORITY_BORDER = { high: 'border-l-red-500', medium: 'border-l-amber-500', low: 'border-l-emerald-500' };
 const PRIORITY_BG     = { high: 'bg-red-500/5',  medium: 'bg-amber-500/5',  low: 'bg-emerald-500/5'  };
 
+const SPAN_BAR_H = 28; // px per spanning-bar row
+
 function getTaskSpan(task) {
   if (!task.due_date) return [];
   const start = new Date(task.due_date);
@@ -23,7 +25,6 @@ function blockHeight(duration_minutes) {
   return Math.max(56, Math.min(Math.round(hours * 56), 280));
 }
 
-// Place multi-day tasks into rows avoiding overlap
 function computeMultiDayLayout(multiDaySpans, weekDays) {
   const positioned = [];
   for (const { task, span } of multiDaySpans) {
@@ -34,10 +35,8 @@ function computeMultiDayLayout(multiDaySpans, weekDays) {
       if (span.some((s) => isSameDay(s, weekDays[i]))) { endCol = i; break; }
     }
     if (endCol === -1) continue;
-
     const startsThisWeek = isSameDay(span[0], weekDays[startCol]);
     const endsThisWeek   = isSameDay(span[span.length - 1], weekDays[endCol]);
-
     let row = 0;
     while (positioned.some((p) => p.row === row && p.startCol <= endCol && p.endCol >= startCol)) row++;
     positioned.push({ task, startCol, endCol, row, startsThisWeek, endsThisWeek });
@@ -105,16 +104,12 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
   const weekEnd   = endOfWeek(current, { weekStartsOn: 0 });
   const days      = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  const taskSpans = tasks
-    .filter((t) => t.due_date)
-    .map((t) => ({ task: t, span: getTaskSpan(t) }));
-
-  // Separate span tasks (calendar days) from time-estimate tasks (hours/minutes)
+  const taskSpans = tasks.filter((t) => t.due_date).map((t) => ({ task: t, span: getTaskSpan(t) }));
   const isSpanTask = (task) => task.span_days && task.span_days >= 2;
-
   const multiDaySpans  = taskSpans.filter(({ task }) => isSpanTask(task));
   const multiDayLayout = computeMultiDayLayout(multiDaySpans, days);
   const numSpanRows    = multiDayLayout.reduce((max, { row }) => Math.max(max, row + 1), 0);
+  const spanAreaH      = numSpanRows > 0 ? numSpanRows * SPAN_BAR_H + 4 : 0;
 
   const singleTasksForDay = (day) =>
     taskSpans
@@ -142,48 +137,47 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
       </div>
 
       <div className="flex-1 overflow-auto">
-        {/* Day headers + spanning tasks panel */}
-        <div className="border border-app-border rounded-xl overflow-hidden mb-3">
-          {/* Day headers row */}
-          <div className="grid grid-cols-7 divide-x divide-app-border bg-app-card/50">
-            {days.map((day, i) => {
-              const todayFlag = isToday(day);
-              return (
-                <button
-                  key={i}
-                  onClick={() => onDayClick?.(day)}
-                  className={`flex flex-col items-center py-2.5 transition w-full
-                    ${todayFlag ? 'bg-brand-accent/10' : 'hover:bg-app-sidebar'}
-                    ${onDayClick ? 'cursor-pointer' : 'cursor-default'}`}
-                >
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                    {WEEKDAYS[i]}
-                  </span>
-                  <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mt-0.5
-                    ${todayFlag ? 'bg-brand-accent text-white' : 'text-slate-300'}`}>
-                    {format(day, 'd')}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+        {/* Day headers */}
+        <div className="grid grid-cols-7 divide-x divide-app-border border border-app-border rounded-xl overflow-hidden mb-2 bg-app-card/50">
+          {days.map((day, i) => {
+            const todayFlag = isToday(day);
+            return (
+              <button
+                key={i}
+                onClick={() => onDayClick?.(day)}
+                className={`flex flex-col items-center py-2.5 transition w-full
+                  ${todayFlag ? 'bg-brand-accent/10' : 'hover:bg-app-sidebar'}
+                  ${onDayClick ? 'cursor-pointer' : 'cursor-default'}`}
+              >
+                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                  {WEEKDAYS[i]}
+                </span>
+                <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mt-0.5
+                  ${todayFlag ? 'bg-brand-accent text-white' : 'text-slate-300'}`}>
+                  {format(day, 'd')}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
-          {/* Day-spanning tasks (all-day row) */}
+        {/* Day columns area — spanning bars are absolutely positioned at the top, aligned to the same gap-2 grid */}
+        <div className="relative">
           {numSpanRows > 0 && (
             <div
-              className="grid grid-cols-7 border-t border-app-border bg-app-bg/40 p-1"
-              style={{ gridTemplateRows: `repeat(${numSpanRows}, auto)` }}
+              className="absolute inset-x-0 top-0 grid grid-cols-7 gap-2 z-10 pointer-events-none"
+              style={{ gridTemplateRows: `repeat(${numSpanRows}, ${SPAN_BAR_H}px)` }}
             >
               {multiDayLayout.map(({ task, startCol, endCol, row, startsThisWeek, endsThisWeek }) => {
-                const isDone  = task.status === 'done';
+                const isDone   = task.status === 'done';
                 const durLabel = formatDuration(task.duration_minutes);
                 return (
                   <div
                     key={task.taskId}
                     onClick={() => onTaskClick(task)}
-                    style={{ gridColumn: `${startCol + 1} / ${endCol + 2}`, gridRow: row + 1 }}
-                    className={`flex items-start gap-1.5 px-1.5 py-1 mx-0.5 my-0.5 rounded-md text-xs
-                      cursor-pointer hover:opacity-80 transition min-h-[28px] border-l-2
+                    style={{ gridColumn: `${startCol + 1} / ${endCol + 2}`, gridRow: row + 1, pointerEvents: 'all' }}
+                    className={`flex items-center gap-1 px-1.5 rounded-md text-xs cursor-pointer
+                      hover:opacity-80 transition border-l-2 mx-0 my-0.5
                       bg-app-sidebar border border-app-border
                       ${PRIORITY_BORDER[task.priority] || 'border-l-slate-500'}
                       ${PRIORITY_BG[task.priority] || ''}
@@ -191,57 +185,60 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
                   >
                     <button
                       onClick={(e) => { e.stopPropagation(); onStatusChange(task.taskId, isDone ? 'todo' : 'done'); }}
-                      className="flex-shrink-0 focus:outline-none mt-0.5"
+                      className="flex-shrink-0 focus:outline-none"
                     >
-                      {isDone ? <CheckCircle2 size={10} /> : <Circle size={10} />}
+                      {isDone ? <CheckCircle2 size={10} className="text-emerald-400" /> : <Circle size={10} className="text-slate-600" />}
                     </button>
-                    {!startsThisWeek && <span className="opacity-40 text-[8px] flex-shrink-0 mt-0.5">◀</span>}
+                    {!startsThisWeek && <span className="opacity-40 text-[8px] flex-shrink-0">◀</span>}
                     <span
                       dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-                      className={`flex-1 font-medium leading-snug break-words min-w-0 ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
+                      className={`flex-1 font-medium leading-snug truncate min-w-0 ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
                     >
                       {task.title}
                     </span>
                     {durLabel && startsThisWeek && (
-                      <span className="opacity-50 text-[9px] flex-shrink-0 mt-0.5 hidden sm:inline">{durLabel}</span>
+                      <span className="opacity-50 text-[9px] flex-shrink-0 hidden sm:inline">{durLabel}</span>
                     )}
-                    {!endsThisWeek && <span className="opacity-40 text-[8px] flex-shrink-0 mt-0.5">▶</span>}
+                    {!endsThisWeek && <span className="opacity-40 text-[8px] flex-shrink-0">▶</span>}
                   </div>
                 );
               })}
             </div>
           )}
-        </div>
 
-        {/* Single-day (hour/minute) task columns */}
-        <div className="grid grid-cols-7 gap-2" style={{ minHeight: '180px' }}>
-          {days.map((day, i) => {
-            const singleTasks = singleTasksForDay(day);
-            const todayFlag   = isToday(day);
-            return (
-              <div
-                key={i}
-                className={`flex flex-col rounded-xl border p-2 min-h-[160px] transition-colors
-                  ${todayFlag ? 'border-brand-accent/50 bg-brand-accent/5' : 'border-app-border bg-app-card/40'}`}
-              >
-                {singleTasks.length === 0 ? (
-                  <div className="flex-1 flex items-center justify-center">
-                    <span className="text-slate-700 text-xs">—</span>
-                  </div>
-                ) : (
-                  singleTasks.map((task) => (
-                    <SingleDayBlock
-                      key={task.taskId}
-                      task={task}
-                      members={members}
-                      onClick={onTaskClick}
-                      onStatusChange={onStatusChange}
-                    />
-                  ))
-                )}
-              </div>
-            );
-          })}
+          {/* Day columns */}
+          <div
+            className="grid grid-cols-7 gap-2"
+            style={{ minHeight: '180px', paddingTop: spanAreaH > 0 ? `${spanAreaH}px` : undefined }}
+          >
+            {days.map((day, i) => {
+              const singleTasks = singleTasksForDay(day);
+              const todayFlag   = isToday(day);
+              return (
+                <div
+                  key={i}
+                  className={`flex flex-col rounded-xl border p-2 min-h-[160px] transition-colors
+                    ${todayFlag ? 'border-brand-accent/50 bg-brand-accent/5' : 'border-app-border bg-app-card/40'}`}
+                >
+                  {singleTasks.length === 0 ? (
+                    <div className="flex-1 flex items-center justify-center">
+                      <span className="text-slate-700 text-xs">—</span>
+                    </div>
+                  ) : (
+                    singleTasks.map((task) => (
+                      <SingleDayBlock
+                        key={task.taskId}
+                        task={task}
+                        members={members}
+                        onClick={onTaskClick}
+                        onStatusChange={onStatusChange}
+                      />
+                    ))
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

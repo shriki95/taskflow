@@ -11,6 +11,8 @@ const PRIORITY_BAR    = { high: 'bg-red-500',    medium: 'bg-amber-500',    low:
 const PRIORITY_BORDER = { high: 'border-l-red-500', medium: 'border-l-amber-500', low: 'border-l-emerald-500' };
 const PRIORITY_BG     = { high: 'bg-red-500/5',  medium: 'bg-amber-500/5',  low: 'bg-emerald-500/5' };
 
+const SPAN_BAR_H = 22; // px per spanning-bar row
+
 function getTaskSpan(task) {
   if (!task.due_date) return [];
   const start = new Date(task.due_date);
@@ -82,7 +84,7 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
   const weeks = [];
   for (let i = 0; i < allDays.length; i += 7) weeks.push(allDays.slice(i, i + 7));
 
-  const taskSpans = tasks.filter((t) => t.due_date).map((t) => ({ task: t, span: getTaskSpan(t) }));
+  const taskSpans     = tasks.filter((t) => t.due_date).map((t) => ({ task: t, span: getTaskSpan(t) }));
   const multiDaySpans = taskSpans.filter(({ task }) => isSpanTask(task));
 
   const singleTasksForDay = (day) =>
@@ -95,8 +97,8 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
     const rect = e.currentTarget.getBoundingClientRect();
     setPopover({ isoDay, top: rect.top, left: rect.left + rect.width + 6 });
   }, []);
-  const startHide   = useCallback(() => { hideTimer.current = setTimeout(() => setPopover(null), 120); }, []);
-  const cancelHide  = useCallback(() => { clearTimeout(hideTimer.current); }, []);
+  const startHide  = useCallback(() => { hideTimer.current = setTimeout(() => setPopover(null), 120); }, []);
+  const cancelHide = useCallback(() => { clearTimeout(hideTimer.current); }, []);
 
   const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -120,27 +122,26 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
 
       {/* Grid */}
       <div className="flex-1 overflow-auto">
-        {/* Day-of-week headers */}
         <div className="grid grid-cols-7 mb-1">
           {WEEKDAYS.map((d) => (
             <div key={d} className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wider py-1">{d}</div>
           ))}
         </div>
 
-        {/* Week rows */}
         <div className="border border-app-border rounded-xl overflow-hidden">
           {weeks.map((weekDays, wIdx) => {
             const weekLayout  = computeWeekSpanLayout(multiDaySpans, weekDays);
             const numSpanRows = weekLayout.reduce((max, { row }) => Math.max(max, row + 1), 0);
+            const spanAreaH   = numSpanRows > 0 ? numSpanRows * SPAN_BAR_H + 2 : 0;
 
             return (
-              <div key={wIdx} className={wIdx > 0 ? 'border-t border-app-border' : ''}>
+              <div key={wIdx} className={`relative ${wIdx > 0 ? 'border-t border-app-border' : ''}`}>
 
-                {/* Spanning-task strip (one bar per multi-day task) */}
+                {/* Spanning bars — absolutely positioned at the top, aligned to the same grid as day cells */}
                 {numSpanRows > 0 && (
                   <div
-                    className="grid grid-cols-7 bg-app-bg/60 border-b border-app-border/50 p-0.5"
-                    style={{ gridTemplateRows: `repeat(${numSpanRows}, auto)` }}
+                    className="absolute inset-x-0 top-0 grid grid-cols-7 z-10 pointer-events-none"
+                    style={{ gridTemplateRows: `repeat(${numSpanRows}, ${SPAN_BAR_H}px)` }}
                   >
                     {weekLayout.map(({ task, startCol, endCol, row, startsThisWeek, endsThisWeek }) => {
                       const isDone = task.status === 'done';
@@ -148,8 +149,8 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                         <div
                           key={`${task.taskId}-w${wIdx}`}
                           onClick={() => onTaskClick(task)}
-                          style={{ gridColumn: `${startCol + 1} / ${endCol + 2}`, gridRow: row + 1 }}
-                          className={`flex items-center gap-1 px-1.5 py-0.5 mx-0.5 my-0.5 rounded text-xs
+                          style={{ gridColumn: `${startCol + 1} / ${endCol + 2}`, gridRow: row + 1, pointerEvents: 'all' }}
+                          className={`flex items-center gap-1 px-1.5 mx-0.5 my-0.5 rounded text-xs
                             cursor-pointer hover:opacity-80 transition border-l-2
                             bg-app-sidebar border border-app-border
                             ${PRIORITY_BORDER[task.priority] || 'border-l-slate-500'}
@@ -167,7 +168,7 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                           {!startsThisWeek && <span className="opacity-40 text-[8px] flex-shrink-0">◀</span>}
                           <span
                             dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-                            className={`flex-1 text-xs font-medium leading-snug break-words min-w-0 truncate ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
+                            className={`flex-1 text-xs font-medium leading-snug truncate min-w-0 ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
                           >
                             {task.title}
                           </span>
@@ -178,7 +179,7 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                   </div>
                 )}
 
-                {/* Day cells (single-day tasks only) */}
+                {/* Day cells (single-day tasks; padding-top reserves space for the spanning bars above) */}
                 <div className="grid grid-cols-7 divide-x divide-app-border">
                   {weekDays.map((day) => {
                     const singleTasks = singleTasksForDay(day);
@@ -191,6 +192,7 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                       <div
                         key={isoDay}
                         onClick={() => onDayClick && onDayClick(day)}
+                        style={{ paddingTop: spanAreaH > 0 ? `${spanAreaH}px` : undefined }}
                         className={`bg-app-bg p-1.5 min-h-[80px] transition-colors cursor-pointer
                           ${inMonth ? '' : 'opacity-30'}
                           ${todayFlag ? 'bg-brand-primary/40' : 'hover:bg-app-card/60'}`}
@@ -202,12 +204,7 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                           </span>
                         </div>
                         {visible.map((task) => (
-                          <TaskChip
-                            key={`${task.taskId}-${isoDay}`}
-                            task={task}
-                            onClick={onTaskClick}
-                            onStatusChange={onStatusChange}
-                          />
+                          <TaskChip key={`${task.taskId}-${isoDay}`} task={task} onClick={onTaskClick} onStatusChange={onStatusChange} />
                         ))}
                         {overflow > 0 && (
                           <button
