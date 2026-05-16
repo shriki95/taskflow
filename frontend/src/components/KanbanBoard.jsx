@@ -101,7 +101,7 @@ function Column({ col, tasks, members, colorIndex, onTaskClick, onAddTask, onSta
 
         <div className="flex items-center gap-0.5 opacity-0 group-hover/header:opacity-100 transition">
           <button
-            onClick={() => onAddTask({ groupId: col.id })}
+            onClick={() => onAddTask(col.id === '__none__' ? {} : { groupId: col.id })}
             className="text-slate-600 hover:text-slate-300 p-1.5 rounded hover:bg-app-card transition"
             title="Add task"
           >
@@ -215,8 +215,6 @@ function AddColumnButton({ onAdd }) {
 function CompletedSection({ tasks, members, onTaskClick, onRestore }) {
   const [open, setOpen] = useState(false);
 
-  if (tasks.length === 0) return null;
-
   const thisWeekCount = tasks.filter((t) => {
     try { return isThisWeek(new Date(t.updated_at)); } catch { return false; }
   }).length;
@@ -252,26 +250,32 @@ function CompletedSection({ tasks, members, onTaskClick, onRestore }) {
       </button>
 
       {open && (
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-          {tasks.map((task) => (
-            <div key={task.taskId} className="relative group/done">
-              <TaskCard
-                task={task}
-                members={members}
-                onClick={() => onTaskClick(task)}
-                onStatusChange={onRestore}
-              />
-              <button
-                onClick={(e) => { e.stopPropagation(); onRestore(task.taskId, 'todo'); }}
-                className="absolute top-2 right-2 opacity-0 group-hover/done:opacity-100 flex items-center gap-1 text-xs bg-app-bg hover:bg-app-card text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded-full transition border border-app-border shadow-sm"
-                title="Restore task"
-              >
-                <RotateCcw size={10} />
-                Restore
-              </button>
-            </div>
-          ))}
-        </div>
+        tasks.length === 0 ? (
+          <div className="mt-4 flex items-center justify-center h-16 text-slate-600 text-sm">
+            No completed tasks yet. Mark a task as done to see it here.
+          </div>
+        ) : (
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+            {tasks.map((task) => (
+              <div key={task.taskId} className="relative group/done">
+                <TaskCard
+                  task={task}
+                  members={members}
+                  onClick={() => onTaskClick(task)}
+                  onStatusChange={onRestore}
+                />
+                <button
+                  onClick={(e) => { e.stopPropagation(); onRestore(task.taskId, 'todo'); }}
+                  className="absolute top-2 right-2 opacity-0 group-hover/done:opacity-100 flex items-center gap-1 text-xs bg-app-bg hover:bg-app-card text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded-full transition border border-app-border shadow-sm"
+                  title="Restore task"
+                >
+                  <RotateCcw size={10} />
+                  Restore
+                </button>
+              </div>
+            ))}
+          </div>
+        )
       )}
     </div>
   );
@@ -341,7 +345,7 @@ export default function KanbanBoard({
   const unsectionedTasks = tasksByGroup['__none__'];
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
