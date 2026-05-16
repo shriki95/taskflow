@@ -22,6 +22,9 @@ export default function ProjectSettingsModal({ project, currentUserId, onClose, 
   const [search, setSearch]     = useState('');
   const [inviting, setInviting] = useState(null);
   const [duplicating, setDuplicating] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteAnswer, setDeleteAnswer]   = useState('');
+  const [deleting, setDeleting]           = useState(false);
 
   useEffect(() => {
     projectsApi.members(project.projectId).then(({ data }) => setMembers(data.members));
@@ -52,10 +55,14 @@ export default function ProjectSettingsModal({ project, currentUserId, onClose, 
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Delete "${project.name}"? This cannot be undone.`)) return;
-    await projectsApi.delete(project.projectId);
-    onDelete(project.projectId);
-    onClose();
+    setDeleting(true);
+    try {
+      await projectsApi.delete(project.projectId);
+      onDelete(project.projectId);
+      onClose();
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleInvite = async (userId) => {
@@ -220,14 +227,51 @@ export default function ProjectSettingsModal({ project, currentUserId, onClose, 
               <Copy size={15} className="text-slate-500" />
               {duplicating ? 'Duplicating…' : 'Duplicate project'}
             </button>
-            {isOwner && (
+            {isOwner && !confirmDelete && (
               <button
-                onClick={handleDelete}
+                onClick={() => { setConfirmDelete(true); setDeleteAnswer(''); }}
                 className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-400 hover:bg-red-400/10 rounded-lg transition"
               >
                 <Trash2 size={15} />
                 Delete project
               </button>
+            )}
+            {isOwner && confirmDelete && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 space-y-3">
+                <div className="flex items-start gap-2">
+                  <Trash2 size={15} className="text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-300 leading-snug">
+                    אתה עומד למחוק את <span className="font-semibold">"{project.name}"</span> עם כל המשימות שבתוכו. פעולה זו אינה הפיכה.
+                  </p>
+                </div>
+                <p className="text-sm text-slate-300">
+                  כדי לוודא שאתה בטוח — <span className="font-semibold text-slate-100">כמה זה 2+2?</span>
+                </p>
+                <input
+                  autoFocus
+                  type="text"
+                  value={deleteAnswer}
+                  onChange={(e) => setDeleteAnswer(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && deleteAnswer.trim() === '4' && handleDelete()}
+                  placeholder="התשובה שלך…"
+                  className="w-full bg-app-bg border border-red-500/30 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-red-400 transition"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setConfirmDelete(false); setDeleteAnswer(''); }}
+                    className="flex-1 py-2 text-sm text-slate-400 border border-app-border rounded-lg hover:bg-app-bg transition"
+                  >
+                    ביטול
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleteAnswer.trim() !== '4' || deleting}
+                    className="flex-1 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition"
+                  >
+                    {deleting ? 'מוחק…' : 'מחק פרויקט'}
+                  </button>
+                </div>
+              </div>
             )}
           </section>
         </div>
