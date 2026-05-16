@@ -218,7 +218,9 @@ function PendingProjectCard({ project, onAccept, onDecline, accepting }) {
       {/* Overlay */}
       <div className="absolute inset-0 bg-app-bg/70 flex flex-col items-center justify-center gap-3 px-4">
         <div className="text-center">
-          <p className="text-xs text-amber-400 font-semibold mb-0.5">You've been invited</p>
+          <p className="text-xs text-amber-400 font-semibold mb-0.5">
+            {project.invitedByName ? `${project.invitedByName} invited you` : "You've been invited"}
+          </p>
           <p className="text-sm font-semibold text-slate-200">{project.name}</p>
         </div>
         <div className="flex gap-2 w-full">

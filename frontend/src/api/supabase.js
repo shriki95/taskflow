@@ -130,11 +130,26 @@ export const projectsApi = {
     if (!user) return { data: { projects: [] } };
     const { data, error } = await supabase
       .from('project_members')
-      .select('project_id, role, status, projects(*)')
+      .select('project_id, role, status, invited_by, projects(*)')
       .eq('user_id', user.id);
     if (error) wrap(error);
+
+    // Fetch inviter names for pending invitations
+    const inviterIds = [...new Set((data || [])
+      .filter((m) => m.status === 'pending' && m.invited_by)
+      .map((m) => m.invited_by))];
+    let inviterMap = {};
+    if (inviterIds.length) {
+      const { data: profiles } = await supabase
+        .from('profiles').select('id, name').in('id', inviterIds);
+      (profiles || []).forEach((p) => { inviterMap[p.id] = p.name; });
+    }
+
     const projects = (data || [])
-      .map((m) => m.projects ? fmtProject(m.projects, m.status || 'accepted') : null)
+      .map((m) => m.projects ? {
+        ...fmtProject(m.projects, m.status || 'accepted'),
+        invitedByName: m.invited_by ? (inviterMap[m.invited_by] || null) : null,
+      } : null)
       .filter(Boolean);
     return { data: { projects } };
   },
@@ -211,8 +226,9 @@ export const projectsApi = {
   },
 
   invite: async (projectId, userId) => {
+    const { data: { user } } = await supabase.auth.getUser();
     const { error } = await supabase.from('project_members').insert({
-      project_id: projectId, user_id: userId, role: 'member', status: 'pending',
+      project_id: projectId, user_id: userId, role: 'member', status: 'pending', invited_by: user.id,
     });
     if (error) wrap(error);
     return { data: { message: 'Invited' } };
