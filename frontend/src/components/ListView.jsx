@@ -49,7 +49,7 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange }) {
       <td className="py-3 pr-3 min-w-0">
         <span
           dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-          className={`text-sm font-medium line-clamp-2 ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
+          className={`text-sm font-medium ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
         >
           {task.title}
         </span>

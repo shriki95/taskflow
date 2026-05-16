@@ -133,8 +133,8 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
   // row numSpanRows+1   → day cells
   const DAY_ROW     = numSpanRows + 1;
   const rowTemplate = numSpanRows > 0
-    ? `repeat(${numSpanRows}, ${SPAN_BAR_H}px) minmax(160px, 1fr)`
-    : 'minmax(160px, 1fr)';
+    ? `repeat(${numSpanRows}, ${SPAN_BAR_H}px) auto`
+    : 'auto';
 
   return (
     <div className="flex flex-col h-full gap-4">
@@ -168,7 +168,7 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
       </div>
 
       <div className="flex-1 overflow-auto">
-       <div className="flex flex-col gap-2 h-full">
+       <div className="flex flex-col gap-2">
         {/* Day headers */}
         <div
           className="grid divide-x divide-app-border border border-app-border rounded-xl overflow-hidden flex-shrink-0 bg-app-card/50"
@@ -206,7 +206,7 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
 
         {/* Unified day area — spanning bars in top rows, day cells in bottom row, same grid */}
         <div
-          className="border border-app-border rounded-xl overflow-hidden flex-1 bg-app-card/40"
+          className="border border-app-border rounded-xl overflow-hidden bg-app-card/40 min-h-[200px]"
           style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(90px, 1fr))', gridTemplateRows: rowTemplate }}
         >
           {/* Spanning bars */}

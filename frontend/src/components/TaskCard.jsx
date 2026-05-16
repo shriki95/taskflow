@@ -58,7 +58,7 @@ export default function TaskCard({ task, members = [], onClick, onStatusChange, 
         </button>
         <p
           dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-          className={`text-sm font-medium leading-snug line-clamp-2 group-hover:text-slate-100 flex-1
+          className={`text-sm font-medium leading-snug group-hover:text-slate-100 flex-1
             ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
         >
           {task.title}
