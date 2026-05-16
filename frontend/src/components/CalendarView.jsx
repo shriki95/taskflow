@@ -140,7 +140,7 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
             // last row        → single-day chips (auto height)
             const DATE_ROW  = 1;
             const CHIP_ROW  = numSpanRows + 2;
-            const rowTemplate = `28px ${numSpanRows > 0 ? `repeat(${numSpanRows}, ${SPAN_BAR_H}px) ` : ''}minmax(50px, auto)`;
+            const rowTemplate = `28px ${numSpanRows > 0 ? `repeat(${numSpanRows}, ${SPAN_BAR_H}px) ` : ''}88px`;
 
             return (
               <div
@@ -157,11 +157,12 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                       key={`d-${day.toISOString()}`}
                       style={{ gridColumn: col + 1, gridRow: DATE_ROW }}
                       onClick={() => onDayClick && onDayClick(day)}
-                      className={`flex items-center justify-end px-1.5 pt-1 pb-0 cursor-pointer bg-app-bg
+                      className={`flex items-center justify-end px-1.5 pt-1 pb-0 cursor-pointer
+                        bg-app-card
                         ${col > 0 ? 'border-l border-app-border' : ''}
                         border-b border-app-border
-                        ${inMonth ? '' : 'opacity-30'}
-                        ${todayFlag ? 'bg-brand-primary/40' : 'hover:bg-app-card/60'}`}
+                        ${inMonth ? '' : 'opacity-40'}
+                        ${todayFlag ? '!bg-brand-accent/20' : ''}`}
                     >
                       <span className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full
                         ${todayFlag ? 'bg-brand-accent text-white' : 'text-slate-400'}`}>
@@ -178,7 +179,7 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                     <div
                       key={`s-${task.taskId}-w${wIdx}`}
                       onClick={() => onTaskClick(task)}
-                      style={{ gridColumn: `${startCol + 1} / ${endCol + 2}`, gridRow: row + 2 }}
+                      style={{ gridColumn: `${startCol + 1} / ${endCol + 2}`, gridRow: row + 2, background: 'transparent' }}
                       className={`flex items-center gap-1 px-1.5 mx-0.5 my-0.5 rounded text-xs
                         cursor-pointer hover:opacity-80 transition border-l-2
                         bg-app-sidebar border border-app-border
@@ -217,10 +218,11 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                       key={`c-${isoDay}`}
                       style={{ gridColumn: col + 1, gridRow: CHIP_ROW }}
                       onClick={() => onDayClick && onDayClick(day)}
-                      className={`p-1 cursor-pointer bg-app-bg
+                      className={`p-1 cursor-pointer overflow-hidden
+                        bg-app-bg
                         ${col > 0 ? 'border-l border-app-border' : ''}
-                        ${inMonth ? '' : 'opacity-30'}
-                        ${todayFlag ? 'bg-brand-primary/40' : 'hover:bg-app-card/60'}`}
+                        ${inMonth ? '' : 'opacity-40'}
+                        ${todayFlag ? '!bg-brand-accent/5' : 'hover:bg-app-card/40'}`}
                     >
                       {visible.map((task) => (
                         <TaskChip key={`${task.taskId}-${isoDay}`} task={task} onClick={onTaskClick} onStatusChange={onStatusChange} />
