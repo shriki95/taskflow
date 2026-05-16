@@ -89,8 +89,8 @@ function WeekTaskBlock({ task, members, onClick, onStatusChange, isFirst, isMult
   );
 }
 
-export default function WeekView({ tasks, members, onTaskClick, onStatusChange }) {
-  const [current, setCurrent] = useState(new Date());
+export default function WeekView({ tasks, members, onTaskClick, onStatusChange, initialDate, onDayClick }) {
+  const [current, setCurrent] = useState(initialDate || new Date());
 
   const weekStart = startOfWeek(current, { weekStartsOn: 0 });
   const weekEnd   = endOfWeek(current, { weekStartsOn: 0 });
@@ -153,7 +153,11 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange }
                 className={`flex flex-col rounded-xl border p-2 min-h-[300px] transition-colors
                   ${todayFlag ? 'border-brand-accent/50 bg-brand-accent/5' : 'border-app-border bg-app-card/40'}`}
               >
-                <div className="flex flex-col items-center mb-2 pb-2 border-b border-app-border">
+                <button
+                  onClick={() => onDayClick && onDayClick(day)}
+                  className={`flex flex-col items-center mb-2 pb-2 border-b border-app-border w-full
+                    ${onDayClick ? 'cursor-pointer hover:opacity-70 transition-opacity' : 'cursor-default'}`}
+                >
                   <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
                     {WEEKDAYS[i]}
                   </span>
@@ -163,7 +167,7 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange }
                   >
                     {format(day, 'd')}
                   </span>
-                </div>
+                </button>
 
                 <div className="flex-1 overflow-y-auto">
                   {entries.length === 0 ? (

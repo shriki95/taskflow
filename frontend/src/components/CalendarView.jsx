@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, isSameDay, isSameMonth, isToday,
@@ -14,7 +14,6 @@ const PRIORITY_BAR = {
   low:    'bg-emerald-500',
 };
 
-// Returns all dates a task spans (based on due_date and duration_minutes)
 function getTaskSpan(task) {
   if (!task.due_date) return [];
   const due = new Date(task.due_date);
@@ -70,8 +69,10 @@ function TaskChip({ task, members, onClick, onStatusChange, isFirst, isMultiDay 
   );
 }
 
-export default function CalendarView({ tasks, members, onTaskClick, onStatusChange }) {
+export default function CalendarView({ tasks, members, onTaskClick, onStatusChange, onDayClick }) {
   const [current, setCurrent] = useState(new Date());
+  const [popover, setPopover] = useState(null); // { isoDay, top, left }
+  const hideTimer = useRef(null);
 
   const monthStart = startOfMonth(current);
   const monthEnd   = endOfMonth(current);
@@ -79,7 +80,6 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
   const gridEnd    = endOfWeek(monthEnd, { weekStartsOn: 0 });
   const days       = eachDayOfInterval({ start: gridStart, end: gridEnd });
 
-  // Pre-compute spans for each task
   const taskSpans = tasks
     .filter((t) => t.due_date)
     .map((t) => ({ task: t, span: getTaskSpan(t) }));
@@ -92,6 +92,20 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
         isFirst: isSameDay(span[0], day),
         isMultiDay: span.length > 1,
       }));
+
+  const showPopover = useCallback((e, isoDay) => {
+    clearTimeout(hideTimer.current);
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPopover({ isoDay, top: rect.top, left: rect.left + rect.width + 6 });
+  }, []);
+
+  const startHide = useCallback(() => {
+    hideTimer.current = setTimeout(() => setPopover(null), 120);
+  }, []);
+
+  const cancelHide = useCallback(() => {
+    clearTimeout(hideTimer.current);
+  }, []);
 
   const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -141,11 +155,13 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
             const todayFlag = isToday(day);
             const visible   = dayEntries.slice(0, 3);
             const overflow  = dayEntries.length - 3;
+            const isoDay    = day.toISOString();
 
             return (
               <div
-                key={day.toISOString()}
-                className={`bg-app-bg p-1.5 min-h-[90px] transition-colors
+                key={isoDay}
+                onClick={() => onDayClick && onDayClick(day)}
+                className={`bg-app-bg p-1.5 min-h-[90px] transition-colors cursor-pointer
                   ${inMonth ? '' : 'opacity-30'}
                   ${todayFlag ? 'bg-brand-primary/40' : 'hover:bg-app-card/60'}`}
               >
@@ -160,7 +176,7 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
 
                 {visible.map(({ task, isFirst, isMultiDay }) => (
                   <TaskChip
-                    key={`${task.taskId}-${day.toISOString()}`}
+                    key={`${task.taskId}-${isoDay}`}
                     task={task}
                     members={members}
                     onClick={onTaskClick}
@@ -170,13 +186,50 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                   />
                 ))}
                 {overflow > 0 && (
-                  <span className="text-xs text-slate-500 pl-1">+{overflow} more</span>
+                  <button
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseEnter={(e) => showPopover(e, isoDay)}
+                    onMouseLeave={startHide}
+                    className="text-xs text-slate-500 hover:text-slate-300 pl-1 transition"
+                  >
+                    +{overflow} more
+                  </button>
                 )}
               </div>
             );
           })}
         </div>
       </div>
+
+      {/* Overflow popover (fixed position to escape overflow:hidden) */}
+      {popover && (() => {
+        const popDay = days.find((d) => d.toISOString() === popover.isoDay);
+        if (!popDay) return null;
+        const allEntries = tasksForDay(popDay);
+        return (
+          <div
+            className="fixed z-50 bg-app-card border border-app-border rounded-xl shadow-2xl p-2 w-60 max-h-72 overflow-y-auto"
+            style={{ top: Math.min(popover.top, window.innerHeight - 300), left: Math.min(popover.left, window.innerWidth - 260) }}
+            onMouseEnter={cancelHide}
+            onMouseLeave={startHide}
+          >
+            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
+              {format(popDay, 'MMM d')} · {allEntries.length} tasks
+            </p>
+            {allEntries.map(({ task, isFirst, isMultiDay }) => (
+              <TaskChip
+                key={`pop-${task.taskId}`}
+                task={task}
+                members={members}
+                onClick={(t) => { setPopover(null); onTaskClick(t); }}
+                onStatusChange={onStatusChange}
+                isFirst={isFirst}
+                isMultiDay={isMultiDay}
+              />
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }

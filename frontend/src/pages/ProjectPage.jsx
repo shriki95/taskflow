@@ -29,6 +29,7 @@ export default function ProjectPage() {
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [createStatus, setCreateStatus] = useState('todo');
   const [createGroupId, setCreateGroupId] = useState(null);
+  const [calNavDate, setCalNavDate] = useState(null);
   const [showEditProject, setShowEditProject] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -142,6 +143,11 @@ export default function ProjectPage() {
     },
     [tasks, projectId]
   );
+
+  const handleDayClick = useCallback((date) => {
+    setCalNavDate(date);
+    setView((v) => (v === 'calendar' ? 'week' : 'day'));
+  }, []);
 
   const openCreateTask = (options = {}) => {
     if (typeof options === 'string') {
@@ -323,22 +329,28 @@ export default function ProjectPage() {
                 members={members}
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
+                onDayClick={handleDayClick}
               />
             )}
             {view === 'week' && (
               <WeekView
+                key={calNavDate?.toISOString()}
                 tasks={tasks}
                 members={members}
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
+                initialDate={calNavDate}
+                onDayClick={handleDayClick}
               />
             )}
             {view === 'day' && (
               <DayView
+                key={calNavDate?.toISOString()}
                 tasks={tasks}
                 members={members}
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
+                initialDate={calNavDate}
               />
             )}
           </div>

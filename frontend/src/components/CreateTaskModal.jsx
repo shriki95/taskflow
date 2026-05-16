@@ -6,17 +6,23 @@ import Avatar from './Avatar';
 import { isRTL } from '../utils/text';
 
 const TIME_PRESETS = [
-  { value: null, label: '— no estimate' },
-  { value: 5,    label: '5 min' },
-  { value: 15,   label: '15 min' },
-  { value: 30,   label: '30 min' },
-  { value: 60,   label: '1 hour' },
-  { value: 90,   label: '1.5 hours' },
-  { value: 120,  label: '2 hours' },
-  { value: 180,  label: '3 hours' },
-  { value: 240,  label: '4 hours' },
-  { value: 360,  label: '6 hours' },
-  { value: 480,  label: '8 hours' },
+  { value: null,  label: '— no estimate' },
+  { value: 5,     label: '5 min' },
+  { value: 15,    label: '15 min' },
+  { value: 30,    label: '30 min' },
+  { value: 60,    label: '1 hour' },
+  { value: 90,    label: '1.5 hours' },
+  { value: 120,   label: '2 hours' },
+  { value: 180,   label: '3 hours' },
+  { value: 240,   label: '4 hours' },
+  { value: 360,   label: '6 hours' },
+  { value: 480,   label: '8 hours' },
+  { value: 1440,  label: '1 day' },
+  { value: 2880,  label: '2 days' },
+  { value: 4320,  label: '3 days' },
+  { value: 7200,  label: '5 days' },
+  { value: 10080, label: '1 week' },
+  { value: 20160, label: '2 weeks' },
 ];
 
 const STATUSES = [

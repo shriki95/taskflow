@@ -74,8 +74,8 @@ function DayTaskBlock({ task, members, onClick, onStatusChange }) {
   );
 }
 
-export default function DayView({ tasks, members, onTaskClick, onStatusChange }) {
-  const [current, setCurrent] = useState(new Date());
+export default function DayView({ tasks, members, onTaskClick, onStatusChange, initialDate }) {
+  const [current, setCurrent] = useState(initialDate || new Date());
 
   const dayTasks = tasks.filter((t) => {
     if (!t.due_date) return false;
