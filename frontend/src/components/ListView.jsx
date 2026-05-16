@@ -84,7 +84,7 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange }) {
           </button>
         )}
       </td>
-      <td className="py-3 pr-4 w-10">
+      <td className="py-3 pr-4 w-10 hidden sm:table-cell">
         {assignee ? <Avatar name={assignee.name} color={assignee.avatar_color} size="sm" /> : <span className="text-slate-700 text-xs">—</span>}
       </td>
     </tr>
@@ -258,7 +258,6 @@ export default function ListView({
             <th className="py-3 pr-3 w-24 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Priority</th>
             <th className="py-3 pr-3 w-32 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Due date</th>
             <th className="py-3 pr-4 w-10 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Assignee</th>
-            <th className="py-3 pr-4 w-10 sm:hidden" />
           </tr>
         </thead>
         <tbody>
