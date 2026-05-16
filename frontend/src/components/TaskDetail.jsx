@@ -17,9 +17,9 @@ const STATUSES = [
 ];
 
 const PRIORITIES = [
-  { value: 'low',    label: 'Low',    color: 'text-emerald-400' },
-  { value: 'medium', label: 'Medium', color: 'text-amber-400'   },
-  { value: 'high',   label: 'High',   color: 'text-red-400'     },
+  { value: 'low',    label: 'Low',    color: 'text-blue-400'   },
+  { value: 'medium', label: 'Medium', color: 'text-amber-400'  },
+  { value: 'high',   label: 'High',   color: 'text-red-400'    },
 ];
 
 const TIME_PRESETS = [
@@ -34,6 +34,14 @@ const TIME_PRESETS = [
   { value: 240,  label: '4 hours' },
   { value: 360,  label: '6 hours' },
   { value: 480,  label: '8 hours' },
+];
+
+const SPAN_OPTIONS = [
+  { value: '',  label: '— single day' },
+  ...Array.from({ length: 29 }, (_, i) => ({ value: String(i + 2), label: `${i + 2} days` })),
+  { value: '45', label: '45 days' },
+  { value: '60', label: '2 months' },
+  { value: '90', label: '3 months' },
 ];
 
 function FieldSelect({ value, options, onChange, renderOption, renderValue }) {
@@ -112,7 +120,6 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
   const [description, setDescription]  = useState(task.description || '');
   const [editingDesc, setEditingDesc]   = useState(false);
   const [saving, setSaving]             = useState(false);
-  const [spanInput, setSpanInput]       = useState(task.span_days ? String(task.span_days) : '');
 
   const [subtasks, setSubtasks]         = useState([]);
   const [newSubtask, setNewSubtask]     = useState('');
@@ -128,7 +135,6 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
   useEffect(() => {
     setTitle(task.title);
     setDescription(task.description || '');
-    setSpanInput(task.span_days ? String(task.span_days) : '');
     subtasksApi.list(projectId, task.taskId).then(({ data }) => setSubtasks(data.subtasks));
     commentsApi.list(projectId, task.taskId).then(({ data }) => setComments(data.comments));
   }, [task.taskId, projectId]);
@@ -152,12 +158,6 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
   const handleDescBlur = () => {
     setEditingDesc(false);
     if (description !== (task.description || '')) updateField({ description });
-  };
-
-  const handleSpanBlur = () => {
-    const v = spanInput === '' ? null : Math.max(2, Math.min(365, parseInt(spanInput) || 2));
-    if (v !== (task.span_days ?? null)) updateField({ span_days: v });
-    setSpanInput(v ? String(v) : '');
   };
 
   const handleAddSubtask = async (e) => {
@@ -275,35 +275,36 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
         )}
 
         {/* Done / Reopen button */}
-        {isDone ? (
-          <button
-            onClick={() => updateField({ status: 'todo' })}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl
-              bg-emerald-500/10 border border-emerald-500/25 text-emerald-400
-              hover:bg-app-card hover:border-slate-600 hover:text-slate-300 transition text-sm font-medium"
-          >
-            <CheckCircle2 size={16} />
-            Completed — click to reopen
-            <RotateCcw size={13} className="opacity-50 ml-auto" />
-          </button>
-        ) : (
-          <button
-            onClick={() => canMarkDone && updateField({ status: 'done' })}
-            disabled={!canMarkDone}
-            title={!canMarkDone ? `${pendingSubtasks} subtask${pendingSubtasks > 1 ? 's' : ''} remaining` : ''}
-            className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl
-              border text-sm font-medium transition
-              ${canMarkDone
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
-                : 'bg-app-bg border-app-border text-slate-600 cursor-not-allowed'
-              }`}
-          >
-            {canMarkDone
-              ? <><CheckCircle2 size={16} />Mark as Done</>
-              : <><AlertCircle size={15} className="text-amber-500/70" />{pendingSubtasks} subtask{pendingSubtasks > 1 ? 's' : ''} remaining</>
-            }
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {isDone ? (
+            <button
+              onClick={() => updateField({ status: 'todo' })}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
+                bg-emerald-500/10 border border-emerald-500/20 text-emerald-400/80
+                hover:bg-app-card hover:border-slate-600 hover:text-slate-400 transition"
+            >
+              <CheckCircle2 size={13} />
+              Completed
+              <RotateCcw size={11} className="opacity-50 ml-0.5" />
+            </button>
+          ) : (
+            <button
+              onClick={() => canMarkDone && updateField({ status: 'done' })}
+              disabled={!canMarkDone}
+              title={!canMarkDone ? `${pendingSubtasks} subtask${pendingSubtasks > 1 ? 's' : ''} remaining` : ''}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition
+                ${canMarkDone
+                  ? 'bg-emerald-500/8 border-emerald-500/20 text-emerald-400/90 hover:bg-emerald-500/15'
+                  : 'bg-app-bg border-app-border text-slate-600 cursor-not-allowed'
+                }`}
+            >
+              {canMarkDone
+                ? <><CheckCircle2 size={13} />Mark as Done</>
+                : <><AlertCircle size={12} className="text-amber-500/60" />{pendingSubtasks} remaining</>
+              }
+            </button>
+          )}
+        </div>
 
         {/* Meta fields */}
         <div className="bg-app-card/40 border border-app-border rounded-xl px-3 py-2 space-y-0.5">
@@ -374,30 +375,15 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
                 onChange={(e) => updateField({ due_date: e.target.value || null })}
                 className="bg-app-bg border border-app-border rounded-lg px-2.5 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [color-scheme:dark]"
               />
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  min={2}
-                  max={365}
-                  value={spanInput}
-                  onChange={(e) => setSpanInput(e.target.value)}
-                  onBlur={handleSpanBlur}
-                  onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                  placeholder="1"
-                  title="Number of days this task spans"
-                  className="w-14 bg-app-bg border border-app-border rounded-lg px-2 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition text-center"
-                />
-                <span className="text-xs text-slate-500">days</span>
-                {task.span_days && (
-                  <button
-                    onClick={() => { setSpanInput(''); updateField({ span_days: null }); }}
-                    className="text-slate-600 hover:text-red-400 transition ml-0.5"
-                    title="Reset to single day"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
+              <select
+                value={task.span_days ? String(task.span_days) : ''}
+                onChange={(e) => updateField({ span_days: e.target.value ? Number(e.target.value) : null })}
+                className="bg-app-bg border border-app-border rounded-lg px-2 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition"
+              >
+                {SPAN_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
             </div>
           </FieldRow>
 
