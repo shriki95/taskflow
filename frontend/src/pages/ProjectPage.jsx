@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   LayoutGrid, List, CalendarDays, CalendarRange, Sun,
-  Plus, ArrowLeft, Pencil, Trash2,
+  Plus, ArrowLeft, Pencil,
 } from 'lucide-react';
 import { projectsApi, tasksApi, taskGroupsApi } from '../api/supabase';
 import Layout from '../components/Layout';
@@ -31,8 +31,6 @@ export default function ProjectPage() {
   const [createGroupId, setCreateGroupId] = useState(null);
   const [calNavDate, setCalNavDate] = useState(null);
   const [showEditProject, setShowEditProject] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showHolidays, setShowHolidays] = useState(() => {
@@ -116,16 +114,6 @@ export default function ProjectPage() {
     setShowEditProject(false);
   }, []);
 
-  const handleDeleteProject = async () => {
-    setDeleting(true);
-    try {
-      await projectsApi.delete(projectId);
-      navigate('/dashboard');
-    } catch {
-      setDeleting(false);
-      setShowDeleteConfirm(false);
-    }
-  };
 
   const handleGroupCreate = useCallback(async (name) => {
     const { data } = await taskGroupsApi.create(projectId, { name, position: groups.length });
@@ -284,13 +272,7 @@ export default function ProjectPage() {
               >
                 <Pencil size={15} />
               </button>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition"
-                title="Delete project"
-              >
-                <Trash2 size={15} />
-              </button>
+
             </div>
 
             <button
@@ -418,35 +400,6 @@ export default function ProjectPage() {
         )}
       </AnimatePresence>
 
-      {/* Delete Confirm Modal */}
-      <AnimatePresence>
-        {showDeleteConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={() => !deleting && setShowDeleteConfirm(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="relative bg-app-card border border-app-border rounded-2xl p-6 w-full max-w-sm z-10"
-            >
-              <h3 className="text-lg font-semibold text-slate-100 mb-2">Delete project?</h3>
-              <p className="text-slate-400 text-sm mb-6">
-                <span className="text-slate-200 font-medium">"{project?.name}"</span> and all its tasks will be permanently deleted.
-              </p>
-              <div className="flex gap-3">
-                <button onClick={() => setShowDeleteConfirm(false)} disabled={deleting} className="flex-1 border border-app-border text-slate-400 hover:text-slate-200 py-2.5 rounded-lg transition font-medium disabled:opacity-40">
-                  Cancel
-                </button>
-                <button onClick={handleDeleteProject} disabled={deleting} className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white py-2.5 rounded-lg transition font-semibold">
-                  {deleting ? 'Deleting…' : 'Delete'}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </Layout>
   );
 }
