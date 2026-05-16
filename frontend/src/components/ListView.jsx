@@ -171,11 +171,12 @@ export default function ListView({
   };
 
   const hasGroups = groups.length > 0;
+  const activeTasks = tasks.filter((t) => t.status !== 'done');
 
   const renderGroupRows = () => {
     const rows = [];
     groups.forEach((group) => {
-      const groupTasks = tasks.filter((t) => t.group_id === group.groupId);
+      const groupTasks = activeTasks.filter((t) => t.group_id === group.groupId);
       rows.push(
         <GroupSectionHeader
           key={`hdr-${group.groupId}`}
@@ -198,7 +199,7 @@ export default function ListView({
       ));
     });
 
-    const ungrouped = tasks.filter((t) => !t.group_id);
+    const ungrouped = activeTasks.filter((t) => !t.group_id);
     if (ungrouped.length > 0) {
       rows.push(
         <tr key="hdr-ungrouped">
@@ -227,7 +228,7 @@ export default function ListView({
 
   const renderStatusRows = () =>
     STATUS_SECTIONS.flatMap((section) => {
-      const sectionTasks = tasks.filter((t) => t.status === section.id);
+      const sectionTasks = activeTasks.filter((t) => t.status === section.id);
       return [
         <StatusSectionHeader key={`hdr-${section.id}`} label={section.label} count={sectionTasks.length} dot={section.dot} />,
         ...sectionTasks.map((task) => (
