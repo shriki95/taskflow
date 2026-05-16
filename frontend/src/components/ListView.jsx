@@ -1,6 +1,16 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { format, isPast, isToday } from 'date-fns';
-import { Calendar, Plus, Circle, CheckCircle2, Clock, Trash2, FolderPlus } from 'lucide-react';
+import {
+  Calendar, Plus, Circle, CheckCircle2, Clock, Trash2, FolderPlus,
+  MoreHorizontal, ArrowRight, GripVertical,
+} from 'lucide-react';
+import {
+  DndContext, closestCenter, MouseSensor, useSensor, useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import Avatar from './Avatar';
 import { isRTL } from '../utils/text';
 
@@ -22,22 +32,45 @@ const STATUS_SECTIONS = [
   { id: 'done',        label: 'Done',         dot: 'bg-emerald-500' },
 ];
 
-function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange }) {
+// Shared column-width classes for consistent alignment
+const COL = {
+  status:   'w-8 flex-shrink-0 pl-4 pr-2',
+  title:    'flex-1 min-w-0 pr-3',
+  priority: 'w-24 flex-shrink-0 pr-3 hidden sm:flex items-center',
+  dueDate:  'w-32 flex-shrink-0 pr-3 hidden sm:flex items-center',
+  assignee: 'w-10 flex-shrink-0 pr-4 hidden sm:flex items-center',
+  menu:     'w-8 flex-shrink-0 pr-2 hidden sm:flex items-center justify-center',
+};
+
+function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange, allGroups = [], onDelete, onMoveToGroup }) {
   const [editingDate, setEditingDate] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuContainerRef = useRef();
   const priority = PRIORITY[task.priority] || PRIORITY.medium;
   const assignee = members.find((m) => m.userId === task.assignee_id);
   const dueDate = task.due_date ? new Date(task.due_date) : null;
   const isDone = task.status === 'done';
   const isOverdue = dueDate && isPast(dueDate) && !isToday(dueDate) && !isDone;
+  const otherGroups = allGroups.filter((g) => g.groupId !== task.group_id);
+  const showMenu = onDelete || (onMoveToGroup && otherGroups.length > 0);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handle = (e) => {
+      if (!menuContainerRef.current?.contains(e.target)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [menuOpen]);
 
   const IconComponent = STATUS_ICON[task.status] || STATUS_ICON.todo;
 
   return (
-    <tr
+    <div
       onClick={onClick}
-      className="group border-b border-app-border hover:bg-app-card/50 cursor-pointer transition-colors"
+      className="group flex items-center border-b border-app-border hover:bg-app-card/50 cursor-pointer transition-colors"
     >
-      <td className="py-3 pl-4 pr-2 w-8">
+      <div className={`${COL.status} py-3`}>
         <button
           onClick={(e) => { e.stopPropagation(); if (onStatusChange) onStatusChange(task.taskId, isDone ? 'todo' : 'done'); }}
           className="focus:outline-none hover:opacity-70 transition-opacity"
@@ -45,25 +78,27 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange }) {
         >
           <IconComponent />
         </button>
-      </td>
-      <td className="py-3 pr-3 w-full min-w-0">
+      </div>
+
+      <div className={`${COL.title} py-3`}>
         <span
           dir={isRTL(task.title) ? 'rtl' : 'ltr'}
           className={`text-sm font-medium ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
         >
           {task.title}
         </span>
-        {/* Priority badge — shown inline on mobile only */}
         <span className={`sm:hidden inline-flex mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${priority.cls}`}>
           {priority.label}
         </span>
-      </td>
-      <td className="py-3 pr-3 w-24 hidden sm:table-cell">
+      </div>
+
+      <div className={`${COL.priority} py-3`}>
         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priority.cls}`}>
           {priority.label}
         </span>
-      </td>
-      <td className="py-3 pr-3 w-32 hidden sm:table-cell" onClick={(e) => e.stopPropagation()}>
+      </div>
+
+      <div className={`${COL.dueDate} py-3`} onClick={(e) => e.stopPropagation()}>
         {editingDate ? (
           <input
             autoFocus
@@ -83,31 +118,79 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange }) {
             {dueDate ? format(dueDate, 'MMM d, yyyy') : <span className="opacity-0 group-hover:opacity-100">Add date</span>}
           </button>
         )}
-      </td>
-      <td className="py-3 pr-4 w-10 hidden sm:table-cell">
-        {assignee ? <Avatar name={assignee.name} color={assignee.avatar_color} size="sm" /> : <span className="text-slate-700 text-xs">—</span>}
-      </td>
-    </tr>
-  );
-}
+      </div>
 
-function StatusSectionHeader({ label, count, dot }) {
-  return (
-    <tr>
-      <td colSpan={5} className="pt-5 pb-2 pl-4">
-        <div className="flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${dot}`} />
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{label}</span>
-          <span className="text-xs text-slate-600 bg-app-card border border-app-border rounded-full px-1.5">
-            {count}
-          </span>
+      <div className={`${COL.assignee} py-3`}>
+        {assignee
+          ? <Avatar name={assignee.name} color={assignee.avatar_color} size="sm" />
+          : <span className="text-slate-700 text-xs">—</span>
+        }
+      </div>
+
+      {showMenu && (
+        <div
+          ref={menuContainerRef}
+          className={`${COL.menu} py-3 relative`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+            className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-0.5 rounded text-slate-600 hover:text-slate-300 hover:bg-app-sidebar transition"
+          >
+            <MoreHorizontal size={14} />
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-7 z-50 bg-app-card border border-app-border rounded-lg shadow-xl min-w-[160px] py-1">
+              {onMoveToGroup && otherGroups.length > 0 && (
+                <>
+                  <div className="px-3 pt-1.5 pb-1 text-[10px] text-slate-600 uppercase tracking-wider font-semibold">
+                    Move to
+                  </div>
+                  {otherGroups.map((g) => (
+                    <button
+                      key={g.groupId}
+                      onClick={() => { onMoveToGroup(task.taskId, g.groupId); setMenuOpen(false); }}
+                      className="w-full text-left flex items-center gap-2 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 hover:bg-app-bg transition"
+                    >
+                      <ArrowRight size={11} className="flex-shrink-0" />
+                      {g.name}
+                    </button>
+                  ))}
+                  {onDelete && <div className="my-1 border-t border-app-border" />}
+                </>
+              )}
+              {onDelete && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(task.taskId); setMenuOpen(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-red-400/10 transition"
+                >
+                  <Trash2 size={11} />
+                  Delete task
+                </button>
+              )}
+            </div>
+          )}
         </div>
-      </td>
-    </tr>
+      )}
+    </div>
   );
 }
 
-function GroupSectionHeader({ group, taskCount, onRename, onDelete, onAddTask }) {
+function SectionHeaderRow({ label, count, dot }) {
+  return (
+    <div className="pt-5 pb-2 pl-4">
+      <div className="flex items-center gap-2">
+        <span className={`w-2 h-2 rounded-full ${dot}`} />
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{label}</span>
+        <span className="text-xs text-slate-600 bg-app-card border border-app-border rounded-full px-1.5">
+          {count}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function GroupSectionHeader({ group, taskCount, onRename, onDelete, onAddTask, dragHandleProps }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(group.name);
 
@@ -118,53 +201,99 @@ function GroupSectionHeader({ group, taskCount, onRename, onDelete, onAddTask })
   };
 
   return (
-    <tr>
-      <td colSpan={5} className="pt-5 pb-1 pl-4 pr-4">
-        <div className="flex items-center gap-2 group/hdr">
-          <span className="w-2 h-2 rounded-full bg-brand-tertiary flex-shrink-0" />
-          {editing ? (
-            <input
-              autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onBlur={commitRename}
-              onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') { setEditing(false); setName(group.name); } }}
-              className="text-xs font-bold text-slate-200 uppercase tracking-wider bg-transparent border-b border-brand-accent focus:outline-none w-40"
-            />
-          ) : (
-            <button onClick={() => setEditing(true)} className="text-xs font-bold text-slate-400 uppercase tracking-wider hover:text-slate-200 transition">
-              {group.name}
-            </button>
-          )}
-          <span className="text-xs text-slate-600 bg-app-card border border-app-border rounded-full px-1.5">{taskCount}</span>
-          <div className="opacity-0 group-hover/hdr:opacity-100 flex items-center gap-1 ml-auto transition">
-            <button
-              onClick={() => onAddTask(group.groupId)}
-              className="text-slate-600 hover:text-slate-300 p-1 rounded hover:bg-app-card transition"
-              title="Add task to section"
-            >
-              <Plus size={13} />
-            </button>
-            <button
-              onClick={() => onDelete(group.groupId)}
-              className="text-slate-600 hover:text-red-400 p-1 rounded hover:bg-red-400/10 transition"
-              title="Delete section"
-            >
-              <Trash2 size={13} />
-            </button>
-          </div>
+    <div className="pt-5 pb-1 pl-2 pr-4">
+      <div className="flex items-center gap-2 group/hdr">
+        {dragHandleProps && (
+          <button
+            {...dragHandleProps}
+            className="text-slate-700 hover:text-slate-500 cursor-grab active:cursor-grabbing opacity-0 group-hover/hdr:opacity-100 transition touch-none p-0.5 flex-shrink-0"
+            title="Drag to reorder"
+          >
+            <GripVertical size={13} />
+          </button>
+        )}
+        <span className="w-2 h-2 rounded-full bg-brand-tertiary flex-shrink-0" />
+        {editing ? (
+          <input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={commitRename}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') { setEditing(false); setName(group.name); } }}
+            className="text-xs font-bold text-slate-200 uppercase tracking-wider bg-transparent border-b border-brand-accent focus:outline-none w-40"
+          />
+        ) : (
+          <button onClick={() => setEditing(true)} className="text-xs font-bold text-slate-400 uppercase tracking-wider hover:text-slate-200 transition">
+            {group.name}
+          </button>
+        )}
+        <span className="text-xs text-slate-600 bg-app-card border border-app-border rounded-full px-1.5">{taskCount}</span>
+        <div className="opacity-0 group-hover/hdr:opacity-100 flex items-center gap-1 ml-auto transition">
+          <button
+            onClick={() => onAddTask(group.groupId)}
+            className="text-slate-600 hover:text-slate-300 p-1 rounded hover:bg-app-card transition"
+            title="Add task to section"
+          >
+            <Plus size={13} />
+          </button>
+          <button
+            onClick={() => onDelete(group.groupId)}
+            className="text-slate-600 hover:text-red-400 p-1 rounded hover:bg-red-400/10 transition"
+            title="Delete section"
+          >
+            <Trash2 size={13} />
+          </button>
         </div>
-      </td>
-    </tr>
+      </div>
+    </div>
+  );
+}
+
+function SortableGroupSection({ group, tasks, members, onTaskClick, onStatusChange, onDueDateChange, onRename, onDelete, onAddTask, allGroups, onTaskDelete, onColumnChange }) {
+  const { setNodeRef, attributes, listeners, transform, transition, isDragging } =
+    useSortable({ id: group.groupId });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+    >
+      <GroupSectionHeader
+        group={group}
+        taskCount={tasks.length}
+        onRename={onRename}
+        onDelete={onDelete}
+        onAddTask={(gId) => onAddTask({ groupId: gId })}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
+      {tasks.map((task) => (
+        <TaskRow
+          key={task.taskId}
+          task={task}
+          members={members}
+          onClick={() => onTaskClick(task)}
+          onStatusChange={onStatusChange}
+          onDueDateChange={onDueDateChange}
+          allGroups={allGroups}
+          onDelete={onTaskDelete}
+          onMoveToGroup={onColumnChange}
+        />
+      ))}
+    </div>
   );
 }
 
 export default function ListView({
   tasks, members, onTaskClick, onStatusChange, onDueDateChange, onAddTask,
-  groups = [], onGroupCreate, onGroupUpdate, onGroupDelete,
+  groups = [], onGroupCreate, onGroupUpdate, onGroupDelete, onGroupReorder,
+  onColumnChange, onTaskDelete,
 }) {
   const [addingGroup, setAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } })
+  );
 
   const handleAddGroup = async (e) => {
     e.preventDefault();
@@ -174,67 +303,80 @@ export default function ListView({
     setAddingGroup(false);
   };
 
+  const handleSectionDragEnd = ({ active, over }) => {
+    if (!over || active.id === over.id) return;
+    const oldIdx = groups.findIndex((g) => g.groupId === active.id);
+    const newIdx = groups.findIndex((g) => g.groupId === over.id);
+    if (oldIdx !== -1 && newIdx !== -1 && onGroupReorder) {
+      onGroupReorder(arrayMove(groups, oldIdx, newIdx));
+    }
+  };
+
   const hasGroups = groups.length > 0;
   const activeTasks = tasks.filter((t) => t.status !== 'done');
 
-  const renderGroupRows = () => {
-    const rows = [];
-    groups.forEach((group) => {
-      const groupTasks = activeTasks.filter((t) => t.group_id === group.groupId);
-      rows.push(
-        <GroupSectionHeader
-          key={`hdr-${group.groupId}`}
-          group={group}
-          taskCount={groupTasks.length}
-          onRename={onGroupUpdate}
-          onDelete={onGroupDelete}
-          onAddTask={(gId) => onAddTask({ groupId: gId })}
-        />
-      );
-      groupTasks.forEach((task) => rows.push(
-        <TaskRow
-          key={task.taskId}
-          task={task}
-          members={members}
-          onClick={() => onTaskClick(task)}
-          onStatusChange={onStatusChange}
-          onDueDateChange={onDueDateChange}
-        />
-      ));
-    });
+  const renderGroupContent = () => (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>
+      <SortableContext items={groups.map((g) => g.groupId)} strategy={verticalListSortingStrategy}>
+        {groups.map((group) => {
+          const groupTasks = activeTasks.filter((t) => t.group_id === group.groupId);
+          return (
+            <SortableGroupSection
+              key={group.groupId}
+              group={group}
+              tasks={groupTasks}
+              members={members}
+              onTaskClick={onTaskClick}
+              onStatusChange={onStatusChange}
+              onDueDateChange={onDueDateChange}
+              onRename={onGroupUpdate}
+              onDelete={onGroupDelete}
+              onAddTask={onAddTask}
+              allGroups={groups}
+              onTaskDelete={onTaskDelete}
+              onColumnChange={onColumnChange}
+            />
+          );
+        })}
+      </SortableContext>
 
-    const ungrouped = activeTasks.filter((t) => !t.group_id);
-    if (ungrouped.length > 0) {
-      rows.push(
-        <tr key="hdr-ungrouped">
-          <td colSpan={5} className="pt-5 pb-1 pl-4">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-slate-600 flex-shrink-0" />
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">No section</span>
-              <span className="text-xs text-slate-600 bg-app-card border border-app-border rounded-full px-1.5">{ungrouped.length}</span>
+      {/* Ungrouped tasks */}
+      {(() => {
+        const ungrouped = activeTasks.filter((t) => !t.group_id);
+        if (!ungrouped.length) return null;
+        return (
+          <div>
+            <div className="pt-5 pb-1 pl-4">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-slate-600 flex-shrink-0" />
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">No section</span>
+                <span className="text-xs text-slate-600 bg-app-card border border-app-border rounded-full px-1.5">{ungrouped.length}</span>
+              </div>
             </div>
-          </td>
-        </tr>
-      );
-      ungrouped.forEach((task) => rows.push(
-        <TaskRow
-          key={task.taskId}
-          task={task}
-          members={members}
-          onClick={() => onTaskClick(task)}
-          onStatusChange={onStatusChange}
-          onDueDateChange={onDueDateChange}
-        />
-      ));
-    }
-    return rows;
-  };
+            {ungrouped.map((task) => (
+              <TaskRow
+                key={task.taskId}
+                task={task}
+                members={members}
+                onClick={() => onTaskClick(task)}
+                onStatusChange={onStatusChange}
+                onDueDateChange={onDueDateChange}
+                allGroups={groups}
+                onDelete={onTaskDelete}
+                onMoveToGroup={onColumnChange}
+              />
+            ))}
+          </div>
+        );
+      })()}
+    </DndContext>
+  );
 
-  const renderStatusRows = () =>
+  const renderStatusContent = () =>
     STATUS_SECTIONS.flatMap((section) => {
       const sectionTasks = activeTasks.filter((t) => t.status === section.id);
       return [
-        <StatusSectionHeader key={`hdr-${section.id}`} label={section.label} count={sectionTasks.length} dot={section.dot} />,
+        <SectionHeaderRow key={`hdr-${section.id}`} label={section.label} count={sectionTasks.length} dot={section.dot} />,
         ...sectionTasks.map((task) => (
           <TaskRow
             key={task.taskId}
@@ -243,6 +385,7 @@ export default function ListView({
             onClick={() => onTaskClick(task)}
             onStatusChange={onStatusChange}
             onDueDateChange={onDueDateChange}
+            onDelete={onTaskDelete}
           />
         )),
       ];
@@ -250,20 +393,18 @@ export default function ListView({
 
   return (
     <div className="bg-app-card border border-app-border rounded-xl overflow-hidden">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-app-border">
-            <th className="py-3 pl-4 pr-2 w-8" />
-            <th className="py-3 pr-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Task</th>
-            <th className="py-3 pr-3 w-24 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Priority</th>
-            <th className="py-3 pr-3 w-32 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Due date</th>
-            <th className="py-3 pr-4 w-10 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Assignee</th>
-          </tr>
-        </thead>
-        <tbody>
-          {hasGroups ? renderGroupRows() : renderStatusRows()}
-        </tbody>
-      </table>
+      {/* Header */}
+      <div className="flex items-center border-b border-app-border">
+        <div className={`${COL.status} py-3`} />
+        <div className={`${COL.title} py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider`}>Task</div>
+        <div className={`${COL.priority} py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider`}>Priority</div>
+        <div className={`${COL.dueDate} py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider`}>Due date</div>
+        <div className={`${COL.assignee} py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider`}>Assignee</div>
+        <div className={`${COL.menu} py-3`} />
+      </div>
+
+      {/* Content */}
+      {hasGroups ? renderGroupContent() : renderStatusContent()}
 
       {/* Footer */}
       <div className="border-t border-app-border p-3">

@@ -3,7 +3,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CheckSquare, LayoutDashboard, LogOut, ChevronDown, FolderKanban, KeyRound, Menu, X, GripVertical,
+  Sun, Moon,
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 import {
   DndContext, closestCenter, MouseSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
@@ -77,6 +79,7 @@ function SidebarProjectList({ projects, onReorder, location }) {
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
@@ -132,12 +135,21 @@ export default function Layout({ children }) {
           </div>
           <span className="font-bold text-slate-100 text-sm">TaskFlow</span>
         </Link>
-        <button
-          onClick={() => setSidebarOpen(false)}
-          className="lg:hidden text-slate-500 hover:text-slate-300 transition p-1"
-        >
-          <X size={18} />
-        </button>
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={toggleTheme}
+            className="text-slate-500 hover:text-slate-300 transition p-1.5 rounded-lg hover:bg-app-card"
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden text-slate-500 hover:text-slate-300 transition p-1"
+          >
+            <X size={18} />
+          </button>
+        </div>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-3">

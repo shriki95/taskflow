@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -11,10 +11,12 @@ import {
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
+  rectSortingStrategy,
+  arrayMove,
 } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, Check, X, Trash2, ChevronDown, ChevronRight, RotateCcw } from 'lucide-react';
+import { Plus, Check, X, Trash2, ChevronDown, ChevronRight, RotateCcw, GripVertical } from 'lucide-react';
 import { isThisWeek, isThisMonth } from 'date-fns';
 import TaskCard from './TaskCard';
 
@@ -23,7 +25,10 @@ const COL_COLORS = [
   '#ec4899', '#10b981', '#ef4444', '#06b6d4',
 ];
 
-function SortableCard({ task, members, onClick, onStatusChange, onDueDateChange }) {
+// Prefix used to distinguish column sortable IDs from task IDs
+const COL_PREFIX = 'col-';
+
+function SortableCard({ task, members, onClick, onStatusChange, onDueDateChange, groups, onDelete, onMoveToGroup }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: task.taskId });
 
@@ -40,12 +45,19 @@ function SortableCard({ task, members, onClick, onStatusChange, onDueDateChange 
         onClick={onClick}
         onStatusChange={onStatusChange}
         onDueDateChange={onDueDateChange}
+        groups={groups}
+        onDelete={onDelete}
+        onMoveToGroup={onMoveToGroup}
       />
     </div>
   );
 }
 
-function Column({ col, tasks, members, colorIndex, onTaskClick, onAddTask, onStatusChange, onDueDateChange, onRename, onDelete, editable, deletable }) {
+function Column({
+  col, tasks, members, colorIndex, onTaskClick, onAddTask, onStatusChange, onDueDateChange,
+  onRename, onDelete, editable, deletable, dragHandleProps,
+  groups, onTaskDelete, onTaskMoveToGroup,
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id });
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(col.name);
@@ -72,7 +84,16 @@ function Column({ col, tasks, members, colorIndex, onTaskClick, onAddTask, onSta
   return (
     <div className="flex-shrink-0 w-full sm:w-[280px] flex flex-col">
       <div className="flex items-center justify-between mb-3 px-1 group/header">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="flex items-center gap-1 flex-1 min-w-0">
+          {dragHandleProps && (
+            <button
+              {...dragHandleProps}
+              className="flex-shrink-0 text-slate-700 hover:text-slate-500 cursor-grab active:cursor-grabbing opacity-0 group-hover/header:opacity-100 transition touch-none p-0.5"
+              title="Drag to reorder"
+            >
+              <GripVertical size={12} />
+            </button>
+          )}
           <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
           {editing ? (
             <input
@@ -139,6 +160,9 @@ function Column({ col, tasks, members, colorIndex, onTaskClick, onAddTask, onSta
               onClick={() => onTaskClick(task)}
               onStatusChange={onStatusChange}
               onDueDateChange={onDueDateChange}
+              groups={groups}
+              onDelete={onTaskDelete}
+              onMoveToGroup={onTaskMoveToGroup}
             />
           ))}
         </SortableContext>
@@ -149,6 +173,21 @@ function Column({ col, tasks, members, colorIndex, onTaskClick, onAddTask, onSta
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function SortableColumn(props) {
+  const { col } = props;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: `${COL_PREFIX}${col.id}` });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+    >
+      <Column {...props} dragHandleProps={{ ...attributes, ...listeners }} />
     </div>
   );
 }
@@ -217,6 +256,18 @@ function AddColumnButton({ onAdd }) {
   );
 }
 
+function ColumnDragOverlay({ col, colorIndex }) {
+  const color = colorIndex < 0 ? '#475569' : COL_COLORS[colorIndex % COL_COLORS.length];
+  return (
+    <div className="w-full sm:w-[280px] bg-app-card border border-brand-accent/50 rounded-xl p-3 shadow-2xl opacity-90 rotate-1">
+      <div className="flex items-center gap-2">
+        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+        <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">{col.name}</span>
+      </div>
+    </div>
+  );
+}
+
 function CompletedSection({ tasks, members, onTaskClick, onRestore }) {
   const [open, setOpen] = useState(false);
 
@@ -230,14 +281,12 @@ function CompletedSection({ tasks, members, onTaskClick, onRestore }) {
 
   return (
     <div className="mt-16">
-      {/* Divider with label */}
       <div className="flex items-center gap-3 mb-3">
         <div className="flex-1 h-px bg-app-border" />
         <span className="text-xs text-slate-700 uppercase tracking-widest font-semibold">History</span>
         <div className="flex-1 h-px bg-app-border" />
       </div>
 
-      {/* Toggle tab */}
       <button
         onClick={() => setOpen((v) => !v)}
         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition group ${
@@ -313,8 +362,12 @@ export default function KanbanBoard({
   onGroupCreate,
   onGroupUpdate,
   onGroupDelete,
+  onGroupReorder,
+  onTaskDelete,
 }) {
   const [activeTask, setActiveTask] = useState(null);
+  const [activeColumn, setActiveColumn] = useState(null);
+  const activeDragTypeRef = useRef(null);
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } })
@@ -323,7 +376,6 @@ export default function KanbanBoard({
   const activeTasks = tasks.filter((t) => t.status !== 'done');
   const doneTasks = tasks.filter((t) => t.status === 'done');
 
-  // Build group → tasks mapping
   const tasksByGroup = {};
   groups.forEach((g) => { tasksByGroup[g.groupId] = []; });
   tasksByGroup['__none__'] = [];
@@ -342,16 +394,57 @@ export default function KanbanBoard({
     return null;
   };
 
+  const collisionDetection = useCallback((args) => {
+    if (activeDragTypeRef.current === 'column') {
+      const colContainers = args.droppableContainers.filter(
+        (c) => String(c.id).startsWith(COL_PREFIX)
+      );
+      if (colContainers.length > 0) {
+        return closestCenter({ ...args, droppableContainers: colContainers });
+      }
+      return [];
+    }
+    // Task drag: exclude col-* containers
+    const taskContainers = args.droppableContainers.filter(
+      (c) => !String(c.id).startsWith(COL_PREFIX)
+    );
+    return closestCenter({ ...args, droppableContainers: taskContainers });
+  }, []);
+
   const handleDragStart = ({ active }) => {
-    setActiveTask(tasks.find((t) => t.taskId === active.id) || null);
+    const isCol = String(active.id).startsWith(COL_PREFIX);
+    activeDragTypeRef.current = isCol ? 'column' : 'task';
+    if (isCol) {
+      const groupId = String(active.id).slice(COL_PREFIX.length);
+      setActiveColumn(groups.find((g) => g.groupId === groupId) || null);
+    } else {
+      setActiveTask(tasks.find((t) => t.taskId === active.id) || null);
+    }
   };
 
   const handleDragEnd = ({ active, over }) => {
+    if (activeDragTypeRef.current === 'column') {
+      activeDragTypeRef.current = null;
+      setActiveColumn(null);
+      if (!over || active.id === over.id) return;
+      const groupId = String(active.id).slice(COL_PREFIX.length);
+      const overGroupId = String(over.id).slice(COL_PREFIX.length);
+      const oldIdx = groups.findIndex((g) => g.groupId === groupId);
+      const newIdx = groups.findIndex((g) => g.groupId === overGroupId);
+      if (oldIdx !== -1 && newIdx !== -1 && onGroupReorder) {
+        onGroupReorder(arrayMove(groups, oldIdx, newIdx));
+      }
+      return;
+    }
+
+    activeDragTypeRef.current = null;
     setActiveTask(null);
     if (!over) return;
 
     const targetId = over.id;
-    const newGroupId = targetId === '__none__' ? null : groups.find((g) => g.groupId === targetId)?.groupId ?? null;
+    const newGroupId = targetId === '__none__'
+      ? null
+      : groups.find((g) => g.groupId === targetId)?.groupId ?? null;
     const currentGroupId = (() => {
       const raw = findGroupId(active.id);
       return raw === '__none__' ? null : raw;
@@ -368,12 +461,11 @@ export default function KanbanBoard({
     <div className="flex flex-col">
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={collisionDetection}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-start sm:flex-wrap">
-          {/* Unsectioned column – shown only when tasks exist without a group */}
           {unsectionedTasks.length > 0 && (
             <Column
               col={{ id: '__none__', name: 'Unsectioned' }}
@@ -388,32 +480,49 @@ export default function KanbanBoard({
               onDelete={() => {}}
               editable={false}
               deletable={false}
+              groups={groups}
+              onTaskDelete={onTaskDelete}
+              onTaskMoveToGroup={onColumnChange}
             />
           )}
 
-          {groups.map((g, idx) => (
-            <Column
-              key={g.groupId}
-              col={{ id: g.groupId, name: g.name }}
-              tasks={tasksByGroup[g.groupId] || []}
-              members={members}
-              colorIndex={idx}
-              onTaskClick={onTaskClick}
-              onAddTask={onAddTask}
-              onStatusChange={onStatusChange}
-              onDueDateChange={onDueDateChange}
-              onRename={onGroupUpdate}
-              onDelete={onGroupDelete}
-              editable
-              deletable
-            />
-          ))}
+          <SortableContext
+            items={groups.map((g) => `${COL_PREFIX}${g.groupId}`)}
+            strategy={rectSortingStrategy}
+          >
+            {groups.map((g, idx) => (
+              <SortableColumn
+                key={g.groupId}
+                col={{ id: g.groupId, name: g.name }}
+                tasks={tasksByGroup[g.groupId] || []}
+                members={members}
+                colorIndex={idx}
+                onTaskClick={onTaskClick}
+                onAddTask={onAddTask}
+                onStatusChange={onStatusChange}
+                onDueDateChange={onDueDateChange}
+                onRename={onGroupUpdate}
+                onDelete={onGroupDelete}
+                editable
+                deletable
+                groups={groups}
+                onTaskDelete={onTaskDelete}
+                onTaskMoveToGroup={onColumnChange}
+              />
+            ))}
+          </SortableContext>
 
           <AddColumnButton onAdd={onGroupCreate} />
         </div>
 
         <DragOverlay>
           {activeTask && <TaskCard task={activeTask} members={members} dragging />}
+          {activeColumn && (
+            <ColumnDragOverlay
+              col={activeColumn}
+              colorIndex={groups.findIndex((g) => g.groupId === activeColumn.groupId)}
+            />
+          )}
         </DragOverlay>
       </DndContext>
 

@@ -11,10 +11,10 @@ export default {
           primary:  '#273347',
         },
         app: {
-          bg:      '#131c2b',
-          sidebar: '#273347',
-          card:    '#1a2535',
-          border:  '#2d3d52',
+          bg:      'rgb(var(--app-bg-rgb) / <alpha-value>)',
+          sidebar: 'rgb(var(--app-sidebar-rgb) / <alpha-value>)',
+          card:    'rgb(var(--app-card-rgb) / <alpha-value>)',
+          border:  'rgb(var(--app-border-rgb) / <alpha-value>)',
         },
       },
       keyframes: {

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Calendar, CheckCircle2, Circle, Clock } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Calendar, CheckCircle2, Circle, Clock, MoreHorizontal, Trash2, ArrowRight } from 'lucide-react';
 import { format, isPast, isToday } from 'date-fns';
 import Avatar from './Avatar';
 import { isRTL, formatDuration } from '../utils/text';
@@ -10,13 +10,36 @@ const PRIORITY = {
   low: { label: 'Low', cls: 'text-blue-400 bg-blue-400/10 border-blue-400/20' },
 };
 
-export default function TaskCard({ task, members = [], onClick, onStatusChange, onDueDateChange, dragging = false }) {
+export default function TaskCard({
+  task,
+  members = [],
+  onClick,
+  onStatusChange,
+  onDueDateChange,
+  dragging = false,
+  groups = [],
+  onDelete,
+  onMoveToGroup,
+}) {
   const [editingDate, setEditingDate] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuContainerRef = useRef();
   const priority = PRIORITY[task.priority] || PRIORITY.medium;
   const assignee = members.find((m) => m.userId === task.assignee_id);
   const dueDate = task.due_date ? new Date(task.due_date) : null;
   const isDone = task.status === 'done';
   const isOverdue = dueDate && isPast(dueDate) && !isToday(dueDate) && !isDone;
+  const otherGroups = groups.filter((g) => g.groupId !== task.group_id);
+  const showMenu = !dragging && (onDelete || (onMoveToGroup && otherGroups.length > 0));
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handle = (e) => {
+      if (!menuContainerRef.current?.contains(e.target)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [menuOpen]);
 
   const handleToggleDone = (e) => {
     e.stopPropagation();
@@ -63,6 +86,54 @@ export default function TaskCard({ task, members = [], onClick, onStatusChange, 
         >
           {task.title}
         </p>
+
+        {/* ⋯ menu */}
+        {showMenu && (
+          <div
+            ref={menuContainerRef}
+            className="relative flex-shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+              className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-0.5 rounded text-slate-600 hover:text-slate-300 hover:bg-app-sidebar transition"
+            >
+              <MoreHorizontal size={14} />
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 top-6 z-50 bg-app-card border border-app-border rounded-lg shadow-xl min-w-[160px] py-1">
+                {onMoveToGroup && otherGroups.length > 0 && (
+                  <>
+                    <div className="px-3 pt-1.5 pb-1 text-[10px] text-slate-600 uppercase tracking-wider font-semibold">
+                      Move to
+                    </div>
+                    {otherGroups.map((g) => (
+                      <button
+                        key={g.groupId}
+                        onClick={() => { onMoveToGroup(task.taskId, g.groupId); setMenuOpen(false); }}
+                        className="w-full text-left flex items-center gap-2 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 hover:bg-app-bg transition"
+                      >
+                        <ArrowRight size={11} className="flex-shrink-0" />
+                        {g.name}
+                      </button>
+                    ))}
+                    {onDelete && <div className="my-1 border-t border-app-border" />}
+                  </>
+                )}
+                {onDelete && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(task.taskId); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-red-400/10 transition"
+                  >
+                    <Trash2 size={11} />
+                    Delete task
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Subtask progress */}

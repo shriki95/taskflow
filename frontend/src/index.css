@@ -3,6 +3,31 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --app-bg-rgb: 19 28 43;
+    --app-sidebar-rgb: 39 51 71;
+    --app-card-rgb: 26 37 53;
+    --app-border-rgb: 45 61 82;
+  }
+
+  html.light {
+    --app-bg-rgb: 248 250 252;
+    --app-sidebar-rgb: 241 245 249;
+    --app-card-rgb: 255 255 255;
+    --app-border-rgb: 226 232 240;
+    color-scheme: light;
+  }
+
+  html.light .text-slate-100 { color: #0f172a; }
+  html.light .text-slate-200 { color: #1e293b; }
+  html.light .text-slate-300 { color: #334155; }
+  html.light .text-slate-400 { color: #475569; }
+  html.light .text-slate-500 { color: #64748b; }
+  html.light .text-slate-600 { color: #94a3b8; }
+  html.light .text-slate-700 { color: #cbd5e1; }
+
+  html.light input[type="date"] { color-scheme: light; }
+
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -11,7 +36,7 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #2d3d52;
+    background: rgb(var(--app-border-rgb));
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {

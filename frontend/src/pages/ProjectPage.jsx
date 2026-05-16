@@ -131,6 +131,23 @@ export default function ProjectPage() {
     await taskGroupsApi.delete(groupId);
   }, []);
 
+  const handleGroupReorder = useCallback(async (reorderedGroups) => {
+    setGroups(reorderedGroups);
+    await Promise.all(
+      reorderedGroups.map((g, idx) => taskGroupsApi.update(g.groupId, { position: idx }))
+    );
+  }, []);
+
+  const handleTaskDeleteFromCard = useCallback(async (taskId) => {
+    setTasks((prev) => prev.filter((t) => t.taskId !== taskId));
+    if (selectedTask?.taskId === taskId) setSelectedTask(null);
+    try {
+      await tasksApi.delete(projectId, taskId);
+    } catch {
+      // silently fail — task is already removed from UI
+    }
+  }, [projectId, selectedTask]);
+
   const handleColumnChange = useCallback(
     async (taskId, newGroupId) => {
       const original = tasks.find((t) => t.taskId === taskId)?.group_id ?? null;
@@ -301,6 +318,8 @@ export default function ProjectPage() {
                 onGroupCreate={handleGroupCreate}
                 onGroupUpdate={handleGroupUpdate}
                 onGroupDelete={handleGroupDelete}
+                onGroupReorder={handleGroupReorder}
+                onTaskDelete={handleTaskDeleteFromCard}
               />
             )}
             {view === 'list' && (
@@ -315,6 +334,9 @@ export default function ProjectPage() {
                 onGroupCreate={handleGroupCreate}
                 onGroupUpdate={handleGroupUpdate}
                 onGroupDelete={handleGroupDelete}
+                onGroupReorder={handleGroupReorder}
+                onColumnChange={handleColumnChange}
+                onTaskDelete={handleTaskDeleteFromCard}
               />
             )}
             {view === 'calendar' && (
