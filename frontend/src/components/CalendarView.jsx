@@ -296,7 +296,7 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                       onDragOver={(e) => { e.preventDefault(); setDragOver(isoDay); }}
                       onDragLeave={() => setDragOver(null)}
                       onDrop={(e) => handleDrop(e, day)}
-                      className={`p-1 cursor-pointer overflow-hidden transition-colors
+                      className={`p-1 cursor-pointer overflow-hidden transition-colors select-none
                         ${col > 0 ? 'border-l border-app-border' : ''}
                         ${inMonth ? '' : 'opacity-40'}
                         ${isOver ? 'bg-brand-accent/10' : todayFlag ? '!bg-brand-accent/5' : 'bg-app-bg hover:bg-app-card/40'}`}
