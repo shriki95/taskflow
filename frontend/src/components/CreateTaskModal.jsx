@@ -205,14 +205,14 @@ export default function CreateTaskModal({
           )}
 
           {/* Due date + End date */}
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Due date</label>
               <input
                 type="date"
                 value={form.due_date}
                 onChange={(e) => set('due_date', e.target.value)}
-                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-3 text-slate-200 focus:outline-none focus:border-brand-accent transition [color-scheme:dark] text-base"
+                className="w-full bg-app-bg border border-app-border rounded-lg px-2 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-accent transition [color-scheme:dark]"
               />
             </div>
             <div>
@@ -229,7 +229,7 @@ export default function CreateTaskModal({
                   const diff = differenceInDays(new Date(e.target.value), new Date(form.due_date));
                   set('span_days', diff >= 1 ? diff + 1 : null);
                 }}
-                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-3 text-slate-200 focus:outline-none focus:border-brand-accent transition [color-scheme:dark] disabled:opacity-35 disabled:cursor-not-allowed text-base"
+                className="w-full bg-app-bg border border-app-border rounded-lg px-2 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-accent transition [color-scheme:dark] disabled:opacity-35 disabled:cursor-not-allowed"
               />
             </div>
           </div>
