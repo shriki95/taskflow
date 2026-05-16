@@ -6,6 +6,7 @@ import {
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
 import { isRTL } from '../utils/text';
+import { getHolidaysForDate, HOLIDAY_STYLE } from '../utils/israeliHolidays';
 
 const PRIORITY_BAR = { high: 'bg-red-500', medium: 'bg-amber-500', low: 'bg-blue-500' };
 
@@ -107,7 +108,7 @@ function SpanChip({ task, onTaskClick, onStatusChange, startsThisWeek, endsThisW
   );
 }
 
-export default function CalendarView({ tasks, members, onTaskClick, onStatusChange, onDayClick, onDueDateChange }) {
+export default function CalendarView({ tasks, members, onTaskClick, onStatusChange, onDayClick, onDueDateChange, showHolidays, onToggleHolidays }) {
   const [current, setCurrent]   = useState(new Date());
   const [popover, setPopover]   = useState(null);
   const [dragOver, setDragOver] = useState(null);
@@ -164,6 +165,17 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
           <button onClick={() => setCurrent((d) => addMonths(d, 1))} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-app-sidebar transition">
             <ChevronRight size={18} />
           </button>
+          <button
+            onClick={onToggleHolidays}
+            title="חגי ישראל"
+            className={`px-2 py-1 text-xs font-medium rounded-lg border transition ${
+              showHolidays
+                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                : 'text-slate-500 hover:text-slate-300 hover:bg-app-sidebar border-app-border'
+            }`}
+          >
+            🇮🇱
+          </button>
         </div>
       </div>
 
@@ -195,19 +207,27 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                 {weekDays.map((day, col) => {
                   const inMonth   = isSameMonth(day, current);
                   const todayFlag = isToday(day);
+                  const holidays  = showHolidays ? getHolidaysForDate(day) : [];
+                  const mainHol   = holidays[0];
+                  const holStyle  = mainHol ? HOLIDAY_STYLE[mainHol.type] : null;
                   return (
                     <div
                       key={`d-${day.toISOString()}`}
                       style={{ gridColumn: col + 1, gridRow: DATE_ROW }}
                       onClick={() => onDayClick && onDayClick(day)}
-                      className={`flex items-center justify-end px-1.5 pt-1 pb-0 cursor-pointer
+                      className={`flex items-center justify-between px-1 pt-1 pb-0 cursor-pointer
                         bg-app-card
                         ${col > 0 ? 'border-l border-app-border' : ''}
                         border-b border-app-border
                         ${inMonth ? '' : 'opacity-40'}
                         ${todayFlag ? '!bg-brand-accent/20' : ''}`}
                     >
-                      <span className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full
+                      {mainHol ? (
+                        <span className={`text-[8px] font-medium truncate leading-none px-0.5 ${holStyle.text}`} dir="rtl">
+                          {mainHol.name}
+                        </span>
+                      ) : <span />}
+                      <span className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full flex-shrink-0
                         ${todayFlag ? 'bg-brand-accent text-white' : 'text-slate-400'}`}>
                         {format(day, 'd')}
                       </span>

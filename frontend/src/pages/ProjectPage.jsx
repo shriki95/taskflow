@@ -35,6 +35,17 @@ export default function ProjectPage() {
   const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showHolidays, setShowHolidays] = useState(() => {
+    try { return localStorage.getItem('tf-show-holidays') === 'true'; } catch { return false; }
+  });
+
+  const handleToggleHolidays = useCallback(() => {
+    setShowHolidays((v) => {
+      const next = !v;
+      try { localStorage.setItem('tf-show-holidays', String(next)); } catch {}
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -331,6 +342,8 @@ export default function ProjectPage() {
                 onStatusChange={handleStatusChange}
                 onDueDateChange={handleDueDateChange}
                 onDayClick={handleDayClick}
+                showHolidays={showHolidays}
+                onToggleHolidays={handleToggleHolidays}
               />
             )}
             {view === 'week' && (
@@ -343,6 +356,8 @@ export default function ProjectPage() {
                 onDueDateChange={handleDueDateChange}
                 initialDate={calNavDate}
                 onDayClick={handleDayClick}
+                showHolidays={showHolidays}
+                onToggleHolidays={handleToggleHolidays}
               />
             )}
             {view === 'day' && (
@@ -353,6 +368,8 @@ export default function ProjectPage() {
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
                 initialDate={calNavDate}
+                showHolidays={showHolidays}
+                onToggleHolidays={handleToggleHolidays}
               />
             )}
           </div>

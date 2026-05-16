@@ -5,6 +5,7 @@ import {
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
 import { isRTL, formatDuration } from '../utils/text';
+import { getHolidaysForDate, HOLIDAY_STYLE } from '../utils/israeliHolidays';
 
 const PRIORITY_BAR    = { high: 'bg-red-500',    medium: 'bg-amber-500',    low: 'bg-blue-500'    };
 const PRIORITY_BORDER = { high: 'border-l-red-500', medium: 'border-l-amber-500', low: 'border-l-blue-500' };
@@ -99,7 +100,7 @@ function SingleDayBlock({ task, members, onClick, onStatusChange }) {
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export default function WeekView({ tasks, members, onTaskClick, onStatusChange, initialDate, onDayClick, onDueDateChange }) {
+export default function WeekView({ tasks, members, onTaskClick, onStatusChange, initialDate, onDayClick, onDueDateChange, showHolidays, onToggleHolidays }) {
   const [current, setCurrent]   = useState(initialDate || new Date());
   const [dragOver, setDragOver] = useState(null);
 
@@ -152,6 +153,17 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
           <button onClick={() => setCurrent((d) => addWeeks(d, 1))} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-app-sidebar transition">
             <ChevronRight size={18} />
           </button>
+          <button
+            onClick={onToggleHolidays}
+            title="חגי ישראל"
+            className={`px-2 py-1 text-xs font-medium rounded-lg border transition ${
+              showHolidays
+                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                : 'text-slate-500 hover:text-slate-300 hover:bg-app-sidebar border-app-border'
+            }`}
+          >
+            🇮🇱
+          </button>
         </div>
       </div>
 
@@ -160,11 +172,14 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
         <div className="grid grid-cols-7 divide-x divide-app-border border border-app-border rounded-xl overflow-hidden flex-shrink-0 bg-app-card/50">
           {days.map((day, i) => {
             const todayFlag = isToday(day);
+            const holidays  = showHolidays ? getHolidaysForDate(day) : [];
+            const mainHol   = holidays[0];
+            const holStyle  = mainHol ? HOLIDAY_STYLE[mainHol.type] : null;
             return (
               <button
                 key={i}
                 onClick={() => onDayClick?.(day)}
-                className={`flex flex-col items-center py-2.5 transition w-full
+                className={`flex flex-col items-center py-2 transition w-full
                   ${todayFlag ? 'bg-brand-accent/10' : 'hover:bg-app-sidebar'}
                   ${onDayClick ? 'cursor-pointer' : 'cursor-default'}`}
               >
@@ -175,6 +190,11 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
                   ${todayFlag ? 'bg-brand-accent text-white' : 'text-slate-300'}`}>
                   {format(day, 'd')}
                 </span>
+                {mainHol && (
+                  <span className={`text-[9px] font-medium mt-0.5 px-1 leading-tight text-center max-w-full truncate ${holStyle.text}`} dir="rtl">
+                    {mainHol.name}
+                  </span>
+                )}
               </button>
             );
           })}
