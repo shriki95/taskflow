@@ -3,12 +3,21 @@ import { supabase } from '../api/supabase';
 
 const AuthContext = createContext(null);
 
+const withTimeout = (promise, ms, fallback) =>
+  Promise.race([
+    promise,
+    new Promise((resolve, reject) =>
+      setTimeout(() => (fallback ? resolve(fallback) : reject(new Error('timeout'))), ms)
+    ),
+  ]);
+
 const loadProfile = async (authUser) => {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('name, avatar_color')
-    .eq('id', authUser.id)
-    .single();
+  const result = await withTimeout(
+    supabase.from('profiles').select('name, avatar_color').eq('id', authUser.id).single(),
+    6000,
+    { data: null }
+  );
+  const profile = result?.data;
   return {
     userId: authUser.id,
     email: authUser.email,
@@ -53,7 +62,16 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    let result;
+    try {
+      result = await withTimeout(
+        supabase.auth.signInWithPassword({ email, password }),
+        12000
+      );
+    } catch {
+      throw { response: { data: { error: 'Connection timed out. Check your network or try again in a moment.' } } };
+    }
+    const { data, error } = result;
     if (error) throw { response: { data: { error: error.message } } };
     const profile = await loadProfile(data.user);
     setUser(profile);
