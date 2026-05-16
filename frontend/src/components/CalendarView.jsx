@@ -65,7 +65,7 @@ function TaskChip({ task, onClick, onStatusChange, compact = false }) {
       <span className={`rounded-full flex-shrink-0 ${PRIORITY_BAR[task.priority] || 'bg-slate-500'} ${compact ? 'w-1 h-1' : 'w-1.5 h-1.5'}`} />
       <span
         dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-        className={`flex-1 leading-none truncate min-w-0 ${isDone ? 'line-through text-slate-500' : 'text-slate-300'}`}
+        className={`flex-1 leading-none truncate min-w-0 hidden sm:inline ${isDone ? 'line-through text-slate-500' : 'text-slate-300'}`}
       >
         {task.title}
       </span>
@@ -99,7 +99,7 @@ function SpanChip({ task, onTaskClick, onStatusChange, startsThisWeek, endsThisW
       <span className={`rounded-full flex-shrink-0 ${PRIORITY_BAR[task.priority] || 'bg-slate-500'} ${compact ? 'w-1 h-1' : 'w-1.5 h-1.5'}`} />
       <span
         dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-        className={`flex-1 leading-none truncate min-w-0 ${isDone ? 'line-through text-slate-500' : 'text-slate-300'}`}
+        className={`flex-1 leading-none truncate min-w-0 hidden sm:inline ${isDone ? 'line-through text-slate-500' : 'text-slate-300'}`}
       >
         {task.title}
       </span>
@@ -200,7 +200,7 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
 
             const DATE_ROW    = 1;
             const CHIP_ROW    = numSpanRows + 2;
-            const rowTemplate = `28px ${numSpanRows > 0 ? `repeat(${numSpanRows}, ${SPAN_BAR_H}px) ` : ''}88px`;
+            const rowTemplate = `28px ${numSpanRows > 0 ? `repeat(${numSpanRows}, ${SPAN_BAR_H}px) ` : ''}minmax(64px, auto)`;
 
             return (
               <div

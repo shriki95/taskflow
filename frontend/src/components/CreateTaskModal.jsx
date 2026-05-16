@@ -20,7 +20,6 @@ const TIME_PRESETS = [
   { value: 480,  label: '8 hours' },
 ];
 
-
 const STATUSES = [
   { value: 'todo', label: 'To Do' },
   { value: 'in_progress', label: 'In Progress' },
@@ -83,7 +82,7 @@ export default function CreateTaskModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -92,14 +91,15 @@ export default function CreateTaskModal({
         onClick={onClose}
       />
       <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.96 }}
-        className="relative bg-app-card border border-app-border rounded-2xl p-6 w-full max-w-lg z-10 shadow-2xl"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 40 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+        className="relative bg-app-card border border-app-border rounded-t-2xl sm:rounded-2xl p-4 sm:p-6 w-full sm:max-w-lg z-10 shadow-2xl max-h-[92vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-semibold text-slate-100">New task</h2>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 transition">
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 transition p-1">
             <X size={20} />
           </button>
         </div>
@@ -125,7 +125,7 @@ export default function CreateTaskModal({
               value={form.title}
               onChange={(e) => set('title', e.target.value)}
               placeholder="What needs to be done?"
-              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition"
+              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-3 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition text-base"
             />
           </div>
 
@@ -140,18 +140,18 @@ export default function CreateTaskModal({
               onChange={(e) => set('description', e.target.value)}
               placeholder="Add more details…"
               rows={2}
-              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition resize-none"
+              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition resize-none text-base"
             />
           </div>
 
-          {/* Row: Status + Priority */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Row: Status + Priority — stacked on mobile */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Status</label>
               <select
                 value={form.status}
                 onChange={(e) => set('status', e.target.value)}
-                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition"
+                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-3 text-slate-200 focus:outline-none focus:border-brand-accent transition text-base"
               >
                 {STATUSES.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
@@ -163,7 +163,7 @@ export default function CreateTaskModal({
               <select
                 value={form.priority}
                 onChange={(e) => set('priority', e.target.value)}
-                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition"
+                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-3 text-slate-200 focus:outline-none focus:border-brand-accent transition text-base"
               >
                 {PRIORITIES.map((p) => (
                   <option key={p.value} value={p.value}>{p.label}</option>
@@ -172,14 +172,14 @@ export default function CreateTaskModal({
             </div>
           </div>
 
-          {/* Section (only shown when groups exist) */}
+          {/* Section */}
           {groups.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Section</label>
               <select
                 value={form.group_id}
                 onChange={(e) => set('group_id', e.target.value)}
-                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition"
+                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-3 text-slate-200 focus:outline-none focus:border-brand-accent transition text-base"
               >
                 <option value="">No section</option>
                 {groups.map((g) => (
@@ -189,15 +189,15 @@ export default function CreateTaskModal({
             </div>
           )}
 
-          {/* Due date + span days */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Due date + End date — stacked on mobile */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Due date</label>
               <input
                 type="date"
                 value={form.due_date}
                 onChange={(e) => set('due_date', e.target.value)}
-                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition [color-scheme:dark]"
+                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-3 text-slate-200 focus:outline-none focus:border-brand-accent transition [color-scheme:dark] text-base"
               />
             </div>
             <div>
@@ -214,7 +214,7 @@ export default function CreateTaskModal({
                   const diff = differenceInDays(new Date(e.target.value), new Date(form.due_date));
                   set('span_days', diff >= 1 ? diff + 1 : null);
                 }}
-                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition [color-scheme:dark] disabled:opacity-35 disabled:cursor-not-allowed"
+                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-3 text-slate-200 focus:outline-none focus:border-brand-accent transition [color-scheme:dark] disabled:opacity-35 disabled:cursor-not-allowed text-base"
               />
             </div>
           </div>
@@ -225,7 +225,7 @@ export default function CreateTaskModal({
             <select
               value={form.duration_minutes ?? ''}
               onChange={(e) => set('duration_minutes', e.target.value ? Number(e.target.value) : null)}
-              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-300 focus:outline-none focus:border-brand-accent transition"
+              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-3 text-slate-300 focus:outline-none focus:border-brand-accent transition text-base"
             >
               {TIME_PRESETS.map((p) => (
                 <option key={p.value ?? 'none'} value={p.value ?? ''}>{p.label}</option>
@@ -239,7 +239,7 @@ export default function CreateTaskModal({
             <select
               value={form.assignee_id}
               onChange={(e) => set('assignee_id', e.target.value)}
-              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition"
+              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-3 text-slate-200 focus:outline-none focus:border-brand-accent transition text-base"
             >
               <option value="">Unassigned</option>
               {members.map((m) => (
@@ -249,18 +249,18 @@ export default function CreateTaskModal({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-2 pb-safe">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 border border-app-border text-slate-400 hover:text-slate-200 py-2.5 rounded-lg transition font-medium"
+              className="flex-1 border border-app-border text-slate-400 hover:text-slate-200 py-3 rounded-xl transition font-medium text-base"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !form.title.trim()}
-              className="flex-1 bg-brand-accent hover:bg-brand-accent/90 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 rounded-lg transition font-semibold"
+              className="flex-1 bg-brand-accent hover:bg-brand-accent/90 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-xl transition font-semibold text-base"
             >
               {loading ? 'Creating…' : 'Create task'}
             </button>

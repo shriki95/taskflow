@@ -75,12 +75,12 @@ function FieldSelect({ value, options, onChange, renderOption, renderValue }) {
 
 function FieldRow({ icon, label, children }) {
   return (
-    <div className="flex items-center gap-3 py-1">
-      <span className="flex items-center gap-1.5 w-24 flex-shrink-0">
-        <span className="text-slate-600">{icon}</span>
-        <span className="text-xs text-slate-500">{label}</span>
+    <div className="flex items-start gap-2 py-1.5">
+      <span className="flex items-center gap-1.5 w-20 flex-shrink-0 pt-0.5">
+        <span className="text-slate-600 flex-shrink-0">{icon}</span>
+        <span className="text-xs text-slate-500 truncate">{label}</span>
       </span>
-      {children}
+      <div className="flex-1 min-w-0">{children}</div>
     </div>
   );
 }
@@ -372,12 +372,12 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
           )}
 
           <FieldRow icon={<Calendar size={12} />} label="Due date">
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 w-full sm:w-auto">
               <input
                 type="date"
                 value={task.due_date ? task.due_date.slice(0, 10) : ''}
                 onChange={(e) => updateField({ due_date: e.target.value || null })}
-                className="bg-app-bg border border-app-border rounded-lg px-2.5 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [color-scheme:dark]"
+                className="w-full sm:w-auto bg-app-bg border border-app-border rounded-lg px-2.5 py-2 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [color-scheme:dark] text-base"
               />
               <input
                 type="date"
@@ -392,7 +392,7 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
                   const diff = differenceInDays(new Date(e.target.value), new Date(task.due_date));
                   updateField({ span_days: diff >= 1 ? diff + 1 : null });
                 }}
-                className="bg-app-bg border border-app-border rounded-lg px-2.5 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [color-scheme:dark] disabled:opacity-35 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto bg-app-bg border border-app-border rounded-lg px-2.5 py-2 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [color-scheme:dark] disabled:opacity-35 disabled:cursor-not-allowed text-base"
               />
             </div>
           </FieldRow>

@@ -168,7 +168,7 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
       </div>
 
       <div className="flex-1 overflow-auto">
-       <div className="flex flex-col gap-2">
+       <div className="flex flex-col gap-2" style={{ minWidth: '630px' }}>
         {/* Day headers */}
         <div
           className="grid divide-x divide-app-border border border-app-border rounded-xl overflow-hidden flex-shrink-0 bg-app-card/50"

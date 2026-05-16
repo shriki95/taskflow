@@ -31,7 +31,7 @@ export default function EditProjectModal({ project, onClose, onUpdate }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -40,10 +40,11 @@ export default function EditProjectModal({ project, onClose, onUpdate }) {
         onClick={onClose}
       />
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="relative bg-app-card border border-app-border rounded-2xl p-6 w-full max-w-md z-10"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 40 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+        className="relative bg-app-card border border-app-border rounded-t-2xl sm:rounded-2xl p-4 sm:p-6 w-full sm:max-w-md z-10 max-h-[92vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-semibold text-slate-100">Edit project</h2>
@@ -106,14 +107,14 @@ export default function EditProjectModal({ project, onClose, onUpdate }) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 border border-app-border text-slate-400 hover:text-slate-200 py-2.5 rounded-lg transition font-medium"
+              className="flex-1 border border-app-border text-slate-400 hover:text-slate-200 py-3 rounded-xl transition font-medium text-base"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !name.trim()}
-              className="flex-1 bg-brand-accent hover:bg-brand-accent/90 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 rounded-lg transition font-semibold"
+              className="flex-1 bg-brand-accent hover:bg-brand-accent/90 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-xl transition font-semibold text-base"
             >
               {loading ? 'Saving…' : 'Save changes'}
             </button>

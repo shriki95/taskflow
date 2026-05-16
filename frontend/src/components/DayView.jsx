@@ -88,40 +88,40 @@ export default function DayView({ tasks, members, onTaskClick, onStatusChange, i
   return (
     <div className="flex flex-col h-full gap-4">
       {/* Header */}
-      <div className="flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-slate-100">
-            {format(current, 'EEEE, MMMM d')}
+      <div className="flex items-center justify-between flex-shrink-0 gap-2 flex-wrap">
+        <div className="flex items-center gap-2 min-w-0">
+          <h2 className="text-base sm:text-lg font-semibold text-slate-100 truncate">
+            {format(current, 'EEE, MMM d')}
           </h2>
           {today && (
-            <span className="text-xs bg-brand-accent text-white px-2 py-0.5 rounded-full font-medium">
+            <span className="text-xs bg-brand-accent text-white px-2 py-0.5 rounded-full font-medium flex-shrink-0">
               Today
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <button
             onClick={() => setCurrent((d) => subDays(d, 1))}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-app-sidebar transition"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-app-sidebar transition"
           >
             <ChevronLeft size={18} />
           </button>
           <button
             onClick={() => setCurrent(new Date())}
-            className="px-3 py-1 text-xs font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-app-sidebar transition border border-app-border"
+            className="px-3 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-app-sidebar transition border border-app-border"
           >
             Today
           </button>
           <button
             onClick={() => setCurrent((d) => addDays(d, 1))}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-app-sidebar transition"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-app-sidebar transition"
           >
             <ChevronRight size={18} />
           </button>
           <button
             onClick={onToggleHolidays}
             title="חגי ישראל"
-            className={`px-2 py-1 text-xs font-medium rounded-lg border transition ${
+            className={`px-2 py-1.5 text-xs font-medium rounded-lg border transition ${
               showHolidays
                 ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
                 : 'text-slate-500 hover:text-slate-300 hover:bg-app-sidebar border-app-border'
