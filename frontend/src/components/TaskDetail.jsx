@@ -214,11 +214,23 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
     commentsApi.list(projectId, task.taskId).then(({ data }) => setComments(data.comments));
   }, [task.taskId, projectId]);
 
+  const notifySubtaskCounts = (nextSubtasks) => {
+    onUpdate({
+      ...task,
+      subtasks_total: nextSubtasks.length,
+      subtasks_completed: nextSubtasks.filter((s) => s.completed).length,
+    });
+  };
+
   const updateField = async (fields) => {
     setSaving(true);
     try {
       const { data } = await tasksApi.update(projectId, task.taskId, fields);
-      onUpdate(data);
+      onUpdate({
+        ...data,
+        subtasks_total: subtasks.length,
+        subtasks_completed: subtasks.filter((s) => s.completed).length,
+      });
     } finally {
       setSaving(false);
     }
@@ -249,8 +261,10 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
         title: newSubtask.trim(),
         position: subtasks.length,
       });
-      setSubtasks((prev) => [...prev, data]);
+      const next = [...subtasks, data];
+      setSubtasks(next);
       setNewSubtask('');
+      notifySubtaskCounts(next);
     } finally {
       setAddingSubtask(false);
     }
@@ -274,6 +288,7 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
     const updated = { completed: !subtask.completed };
     const nextSubtasks = subtasks.map((s) => s.subtaskId === subtask.subtaskId ? { ...s, ...updated } : s);
     setSubtasks(nextSubtasks);
+    notifySubtaskCounts(nextSubtasks);
     await subtasksApi.update(projectId, task.taskId, subtask.subtaskId, updated);
     // Auto-complete task when all subtasks are done
     if (updated.completed && nextSubtasks.every((s) => s.completed) && task.status !== 'done') {
@@ -282,7 +297,9 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
   };
 
   const handleDeleteSubtask = async (subtaskId) => {
-    setSubtasks((prev) => prev.filter((s) => s.subtaskId !== subtaskId));
+    const next = subtasks.filter((s) => s.subtaskId !== subtaskId);
+    setSubtasks(next);
+    notifySubtaskCounts(next);
     await subtasksApi.delete(projectId, task.taskId, subtaskId);
   };
 

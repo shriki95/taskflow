@@ -65,6 +65,26 @@ export default function TaskCard({ task, members = [], onClick, onStatusChange, 
         </p>
       </div>
 
+      {/* Subtask progress */}
+      {task.subtasks_total > 0 && (
+        <div className="mb-2.5">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-slate-500">
+              {task.subtasks_completed}/{task.subtasks_total} subtasks
+            </span>
+            <span className="text-[10px] text-slate-500">
+              {Math.round((task.subtasks_completed / task.subtasks_total) * 100)}%
+            </span>
+          </div>
+          <div className="h-1 bg-app-border rounded-full overflow-hidden">
+            <div
+              className="h-full bg-brand-accent rounded-full transition-all duration-300"
+              style={{ width: `${(task.subtasks_completed / task.subtasks_total) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">

@@ -38,6 +38,8 @@ const fmtTask = (t) => ({
   created_by: t.created_by || null,
   created_at: t.created_at,
   updated_at: t.updated_at,
+  subtasks_total:     (t.subtasks || []).length,
+  subtasks_completed: (t.subtasks || []).filter((s) => s.completed).length,
 });
 
 const fmtGroup = (g) => ({
@@ -210,7 +212,7 @@ export const projectsApi = {
 export const tasksApi = {
   list: async (projectId) => {
     const { data, error } = await supabase
-      .from('tasks').select('*').eq('project_id', projectId);
+      .from('tasks').select('*, subtasks(id, completed)').eq('project_id', projectId);
     if (error) wrap(error);
     return { data: { tasks: (data || []).map(fmtTask) } };
   },
