@@ -70,7 +70,7 @@ function Column({ col, tasks, members, colorIndex, onTaskClick, onAddTask, onSta
   };
 
   return (
-    <div className="flex-shrink-0 w-[280px] flex flex-col">
+    <div className="flex-shrink-0 w-full sm:w-[280px] flex flex-col">
       <div className="flex items-center justify-between mb-3 px-1 group/header">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
@@ -180,7 +180,7 @@ function AddColumnButton({ onAdd }) {
     return (
       <button
         onClick={start}
-        className="flex-shrink-0 w-[280px] flex items-center gap-2 text-slate-600 hover:text-slate-300 hover:bg-app-sidebar/60 px-3 py-2.5 rounded-xl border border-dashed border-app-border hover:border-slate-600 transition text-sm self-start"
+        className="flex-shrink-0 w-full sm:w-[280px] flex items-center gap-2 text-slate-600 hover:text-slate-300 hover:bg-app-sidebar/60 px-3 py-2.5 rounded-xl border border-dashed border-app-border hover:border-slate-600 transition text-sm self-start"
       >
         <Plus size={15} />
         Add column
@@ -189,7 +189,7 @@ function AddColumnButton({ onAdd }) {
   }
 
   return (
-    <div className="flex-shrink-0 w-[280px] bg-app-sidebar/40 rounded-xl p-3 self-start">
+    <div className="flex-shrink-0 w-full sm:w-[280px] bg-app-sidebar/40 rounded-xl p-3 self-start">
       <input
         ref={inputRef}
         value={name}
@@ -372,7 +372,7 @@ export default function KanbanBoard({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-5 items-start flex-wrap">
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-start sm:flex-wrap">
           {/* Unsectioned column – shown only when tasks exist without a group */}
           {unsectionedTasks.length > 0 && (
             <Column
