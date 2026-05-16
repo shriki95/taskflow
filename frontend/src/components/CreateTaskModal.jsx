@@ -204,8 +204,8 @@ export default function CreateTaskModal({
             </div>
           )}
 
-          {/* Due date + End date — stacked on mobile */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Due date + End date */}
+          <div className="grid grid-cols-1 gap-3">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Due date</label>
               <input

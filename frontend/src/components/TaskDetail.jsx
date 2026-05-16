@@ -387,12 +387,12 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
           )}
 
           <FieldRow icon={<Calendar size={12} />} label="Due date">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 w-full sm:w-auto">
+            <div className="flex flex-col gap-1.5 w-full">
               <input
                 type="date"
                 value={task.due_date ? task.due_date.slice(0, 10) : ''}
                 onChange={(e) => updateField({ due_date: e.target.value || null })}
-                className="w-full sm:w-auto bg-app-bg border border-app-border rounded-lg px-2.5 py-2 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [color-scheme:dark] text-base"
+                className="w-full bg-app-bg border border-app-border rounded-lg px-2.5 py-2 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [color-scheme:dark] text-base"
               />
               <input
                 type="date"
@@ -407,7 +407,7 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
                   const diff = differenceInDays(new Date(e.target.value), new Date(task.due_date));
                   updateField({ span_days: diff >= 1 ? diff + 1 : null });
                 }}
-                className="w-full sm:w-auto bg-app-bg border border-app-border rounded-lg px-2.5 py-2 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [color-scheme:dark] disabled:opacity-35 disabled:cursor-not-allowed text-base"
+                className="w-full bg-app-bg border border-app-border rounded-lg px-2.5 py-2 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [color-scheme:dark] disabled:opacity-35 disabled:cursor-not-allowed text-base"
               />
             </div>
           </FieldRow>
@@ -416,7 +416,7 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
             <select
               value={task.duration_minutes ?? ''}
               onChange={(e) => updateField({ duration_minutes: e.target.value ? Number(e.target.value) : null })}
-              className="bg-app-bg border border-app-border rounded-lg px-2 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition"
+              className="w-full bg-app-bg border border-app-border rounded-lg px-2 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition"
             >
               {TIME_PRESETS.map((p) => (
                 <option key={p.value ?? 'none'} value={p.value ?? ''}>{p.label}</option>
