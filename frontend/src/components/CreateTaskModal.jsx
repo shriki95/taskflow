@@ -3,7 +3,21 @@ import { motion } from 'framer-motion';
 import { X, AlertCircle } from 'lucide-react';
 import { tasksApi } from '../api/supabase';
 import Avatar from './Avatar';
-import { isRTL, parseDuration } from '../utils/text';
+import { isRTL } from '../utils/text';
+
+const TIME_PRESETS = [
+  { value: null, label: '— no estimate' },
+  { value: 5,    label: '5 min' },
+  { value: 15,   label: '15 min' },
+  { value: 30,   label: '30 min' },
+  { value: 60,   label: '1 hour' },
+  { value: 90,   label: '1.5 hours' },
+  { value: 120,  label: '2 hours' },
+  { value: 180,  label: '3 hours' },
+  { value: 240,  label: '4 hours' },
+  { value: 360,  label: '6 hours' },
+  { value: 480,  label: '8 hours' },
+];
 
 const STATUSES = [
   { value: 'todo', label: 'To Do' },
@@ -36,8 +50,6 @@ export default function CreateTaskModal({
     group_id: initialGroupId || '',
     duration_minutes: null,
   });
-  const [durationRaw, setDurationRaw] = useState('');
-  const [durationUnit, setDurationUnit] = useState('hours');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -55,7 +67,7 @@ export default function CreateTaskModal({
         due_date: form.due_date || null,
         assignee_id: form.assignee_id || null,
         group_id: form.group_id || null,
-        duration_minutes: parseDuration(durationRaw, durationUnit),
+        duration_minutes: form.duration_minutes,
       };
       const { data } = await tasksApi.create(projectId, payload);
       onCreate(data);
@@ -173,55 +185,42 @@ export default function CreateTaskModal({
             </div>
           )}
 
-          {/* Row: Due Date + Assignee */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Due date</label>
+          {/* Due date + estimated time */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Due date</label>
+            <div className="flex items-center gap-2">
               <input
                 type="date"
                 value={form.due_date}
                 onChange={(e) => set('due_date', e.target.value)}
-                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition [color-scheme:dark]"
+                className="flex-1 bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition [color-scheme:dark]"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Assignee</label>
               <select
-                value={form.assignee_id}
-                onChange={(e) => set('assignee_id', e.target.value)}
-                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition"
+                value={form.duration_minutes ?? ''}
+                onChange={(e) => set('duration_minutes', e.target.value ? Number(e.target.value) : null)}
+                className="bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-300 focus:outline-none focus:border-brand-accent transition text-sm"
+                title="Estimated work time"
               >
-                <option value="">Unassigned</option>
-                {members.map((m) => (
-                  <option key={m.userId} value={m.userId}>{m.name}</option>
+                {TIME_PRESETS.map((p) => (
+                  <option key={p.value ?? 'none'} value={p.value ?? ''}>{p.label}</option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Duration */}
+          {/* Assignee */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Duration</label>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min="0"
-                step="0.5"
-                value={durationRaw}
-                onChange={(e) => setDurationRaw(e.target.value)}
-                placeholder="—"
-                className="w-24 bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent transition [appearance:textfield]"
-              />
-              <select
-                value={durationUnit}
-                onChange={(e) => { setDurationUnit(e.target.value); setDurationRaw(''); }}
-                className="bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition"
-              >
-                <option value="minutes">Minutes</option>
-                <option value="hours">Hours</option>
-                <option value="days">Days</option>
-              </select>
-            </div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Assignee</label>
+            <select
+              value={form.assignee_id}
+              onChange={(e) => set('assignee_id', e.target.value)}
+              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition"
+            >
+              <option value="">Unassigned</option>
+              {members.map((m) => (
+                <option key={m.userId} value={m.userId}>{m.name}</option>
+              ))}
+            </select>
           </div>
 
           {/* Actions */}

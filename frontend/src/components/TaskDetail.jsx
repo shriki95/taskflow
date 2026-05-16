@@ -58,61 +58,19 @@ function FieldSelect({ value, options, onChange, renderOption, renderValue }) {
   );
 }
 
-const DURATION_UNITS = [
-  { value: 'minutes', label: 'min' },
-  { value: 'hours',   label: 'h' },
-  { value: 'days',    label: 'd' },
+const TIME_PRESETS = [
+  { value: null, label: '— no estimate' },
+  { value: 5,    label: '5 min' },
+  { value: 15,   label: '15 min' },
+  { value: 30,   label: '30 min' },
+  { value: 60,   label: '1 hour' },
+  { value: 90,   label: '1.5 hours' },
+  { value: 120,  label: '2 hours' },
+  { value: 180,  label: '3 hours' },
+  { value: 240,  label: '4 hours' },
+  { value: 360,  label: '6 hours' },
+  { value: 480,  label: '8 hours' },
 ];
-
-function DurationField({ value, onChange }) {
-  const [unit, setUnit] = useState(() => {
-    if (!value) return 'hours';
-    if (value >= 1440) return 'days';
-    if (value >= 60) return 'hours';
-    return 'minutes';
-  });
-  const [raw, setRaw] = useState(() => {
-    if (!value) return '';
-    if (value >= 1440) return String(Math.round(value / 1440));
-    if (value >= 60) return String(parseFloat((value / 60).toFixed(1)));
-    return String(value);
-  });
-
-  const commit = () => {
-    const minutes = parseDuration(raw, unit);
-    onChange(minutes);
-  };
-
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs text-slate-600 w-20 flex-shrink-0 flex items-center gap-1">
-        <Clock size={11} /> Duration
-      </span>
-      <div className="flex items-center gap-1">
-        <input
-          type="number"
-          min="0"
-          step="0.5"
-          value={raw}
-          onChange={(e) => setRaw(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => e.key === 'Enter' && commit()}
-          placeholder="—"
-          className="w-16 bg-app-bg border border-app-border rounded-lg px-2.5 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [appearance:textfield]"
-        />
-        <select
-          value={unit}
-          onChange={(e) => { setUnit(e.target.value); setRaw(''); onChange(null); }}
-          className="bg-app-bg border border-app-border rounded-lg px-2 py-1.5 text-sm text-slate-400 focus:outline-none focus:border-brand-accent transition"
-        >
-          {DURATION_UNITS.map((u) => (
-            <option key={u.value} value={u.value}>{u.label}</option>
-          ))}
-        </select>
-      </div>
-    </div>
-  );
-}
 
 function SubtaskItem({ subtask, projectId, taskId, onToggle, onDelete }) {
   return (
@@ -401,22 +359,30 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
             </div>
           )}
 
-          {/* Due date */}
+          {/* Due date + estimated time */}
           <div className="flex items-center gap-3">
             <span className="text-xs text-slate-600 w-20 flex-shrink-0">Due date</span>
-            <input
-              type="date"
-              value={task.due_date ? task.due_date.slice(0, 10) : ''}
-              onChange={(e) => updateField({ due_date: e.target.value || null })}
-              className="bg-app-bg border border-app-border rounded-lg px-2.5 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [color-scheme:dark]"
-            />
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <input
+                type="date"
+                value={task.due_date ? task.due_date.slice(0, 10) : ''}
+                onChange={(e) => updateField({ due_date: e.target.value || null })}
+                className="bg-app-bg border border-app-border rounded-lg px-2.5 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [color-scheme:dark]"
+              />
+              <select
+                value={task.duration_minutes ?? ''}
+                onChange={(e) => updateField({ duration_minutes: e.target.value ? Number(e.target.value) : null })}
+                className="bg-app-bg border border-app-border rounded-lg px-2 py-1.5 text-xs text-slate-400 focus:outline-none focus:border-brand-accent transition"
+                title="Estimated work time"
+              >
+                {TIME_PRESETS.map((p) => (
+                  <option key={p.value ?? 'none'} value={p.value ?? ''}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-
-          {/* Duration */}
-          <DurationField
-            value={task.duration_minutes}
-            onChange={(minutes) => updateField({ duration_minutes: minutes })}
-          />
         </div>
 
         <div className="border-t border-app-border" />
