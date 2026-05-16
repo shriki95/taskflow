@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   created_by       UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   duration_minutes INTEGER,
   span_days        INTEGER,
+  completed_at  TIMESTAMPTZ,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

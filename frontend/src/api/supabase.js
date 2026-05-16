@@ -35,6 +35,7 @@ const fmtTask = (t) => ({
   group_id: t.group_id || null,
   duration_minutes: t.duration_minutes || null,
   span_days: t.span_days || null,
+  completed_at: t.completed_at || null,
   created_by: t.created_by || null,
   created_at: t.created_at,
   updated_at: t.updated_at,
@@ -250,7 +251,10 @@ export const tasksApi = {
     const updates = {};
     if (fields.title !== undefined)       updates.title = fields.title;
     if (fields.description !== undefined) updates.description = fields.description;
-    if (fields.status !== undefined)      updates.status = fields.status;
+    if (fields.status !== undefined) {
+      updates.status = fields.status;
+      updates.completed_at = fields.status === 'done' ? new Date().toISOString() : null;
+    }
     if (fields.priority !== undefined)    updates.priority = fields.priority;
     if (fields.due_date !== undefined)    updates.due_date = fields.due_date;
     if (fields.assignee_id !== undefined) updates.assignee_id = fields.assignee_id;

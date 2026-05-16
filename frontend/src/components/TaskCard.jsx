@@ -85,6 +85,16 @@ export default function TaskCard({ task, members = [], onClick, onStatusChange, 
         </div>
       )}
 
+      {/* Completed date */}
+      {isDone && task.completed_at && (
+        <div className="flex items-center gap-1 mb-2.5">
+          <CheckCircle2 size={10} className="text-emerald-500/70 flex-shrink-0" />
+          <span className="text-[10px] text-emerald-600/80">
+            Done {format(new Date(task.completed_at), 'MMM d, yyyy')}
+          </span>
+        </div>
+      )}
+
       {/* Footer */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
