@@ -2,12 +2,78 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CheckSquare, LayoutDashboard, LogOut, ChevronDown, FolderKanban, KeyRound, Menu, X,
+  CheckSquare, LayoutDashboard, LogOut, ChevronDown, FolderKanban, KeyRound, Menu, X, GripVertical,
 } from 'lucide-react';
+import {
+  DndContext, closestCenter, MouseSensor, useSensor, useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useAuth } from '../context/AuthContext';
 import { projectsApi } from '../api/supabase';
 import Avatar from './Avatar';
 import ChangePasswordModal from './ChangePasswordModal';
+
+function SortableProjectItem({ project, active }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: project.projectId });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      className={`flex items-center gap-0.5 rounded-lg mb-0.5 group/item ${
+        active ? 'bg-brand-accent/15' : 'hover:bg-app-card'
+      }`}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="flex-shrink-0 pl-1.5 pr-0.5 py-2 text-slate-700 hover:text-slate-500 cursor-grab active:cursor-grabbing opacity-0 group-hover/item:opacity-100 transition touch-none"
+      >
+        <GripVertical size={12} />
+      </button>
+      <Link
+        to={`/projects/${project.projectId}`}
+        className={`flex items-center gap-2 px-2 py-2 text-sm transition flex-1 min-w-0 ${
+          active ? 'text-brand-accent font-medium' : 'text-slate-400 hover:text-slate-200'
+        }`}
+      >
+        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} />
+        <span className="truncate">{project.name}</span>
+      </Link>
+    </div>
+  );
+}
+
+function SidebarProjectList({ projects, onReorder, location }) {
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const handleDragEnd = ({ active, over }) => {
+    if (!over || active.id === over.id) return;
+    const oldIdx = projects.findIndex((p) => p.projectId === active.id);
+    const newIdx = projects.findIndex((p) => p.projectId === over.id);
+    onReorder(arrayMove(projects, oldIdx, newIdx));
+  };
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={projects.map((p) => p.projectId)} strategy={verticalListSortingStrategy}>
+        {projects.map((p) => (
+          <SortableProjectItem
+            key={p.projectId}
+            project={p}
+            active={location.pathname === `/projects/${p.projectId}`}
+          />
+        ))}
+      </SortableContext>
+    </DndContext>
+  );
+}
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
@@ -18,13 +84,39 @@ export default function Layout({ children }) {
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const storageKey = user?.userId ? `sidebar-order-${user.userId}` : null;
+
   useEffect(() => {
-    projectsApi.list().then(({ data }) => setProjects(data.projects));
-  }, [location.pathname]);
+    projectsApi.list().then(({ data }) => {
+      const accepted = (data.projects || []).filter((p) => p.memberStatus === 'accepted');
+      if (storageKey) {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        if (saved.length) {
+          const sorted = [...accepted].sort((a, b) => {
+            const ia = saved.indexOf(a.projectId);
+            const ib = saved.indexOf(b.projectId);
+            if (ia === -1) return 1;
+            if (ib === -1) return -1;
+            return ia - ib;
+          });
+          setProjects(sorted);
+          return;
+        }
+      }
+      setProjects(accepted);
+    });
+  }, [location.pathname, storageKey]);
 
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
+
+  const handleReorder = (newOrder) => {
+    setProjects(newOrder);
+    if (storageKey) {
+      localStorage.setItem(storageKey, JSON.stringify(newOrder.map((p) => p.projectId)));
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -60,17 +152,11 @@ export default function Layout({ children }) {
             <p className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider px-2 mb-1">
               Projects
             </p>
-            {projects.map((p) => (
-              <NavItem
-                key={p.projectId}
-                to={`/projects/${p.projectId}`}
-                icon={
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
-                }
-                label={p.name}
-                active={location.pathname === `/projects/${p.projectId}`}
-              />
-            ))}
+            <SidebarProjectList
+              projects={projects}
+              onReorder={handleReorder}
+              location={location}
+            />
           </div>
         )}
       </nav>
