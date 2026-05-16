@@ -71,12 +71,13 @@ export default function ProjectPage() {
 
   const handleStatusChange = useCallback(
     async (taskId, newStatus) => {
-      const original = tasks.find((t) => t.taskId === taskId)?.status;
-      setTasks((prev) => prev.map((t) => (t.taskId === taskId ? { ...t, status: newStatus } : t)));
+      const original = tasks.find((t) => t.taskId === taskId);
+      const completedAt = newStatus === 'done' ? new Date().toISOString() : null;
+      setTasks((prev) => prev.map((t) => (t.taskId === taskId ? { ...t, status: newStatus, completed_at: completedAt } : t)));
       try {
         await tasksApi.update(projectId, taskId, { status: newStatus });
       } catch {
-        setTasks((prev) => prev.map((t) => (t.taskId === taskId ? { ...t, status: original } : t)));
+        setTasks((prev) => prev.map((t) => (t.taskId === taskId ? { ...t, status: original?.status, completed_at: original?.completed_at ?? null } : t)));
       }
     },
     [tasks, projectId]
