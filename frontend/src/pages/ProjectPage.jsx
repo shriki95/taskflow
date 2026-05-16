@@ -177,13 +177,19 @@ export default function ProjectPage() {
     );
   }
 
-  const VIEWS = [
+  const MAIN_VIEWS = [
     { id: 'board',    icon: <LayoutGrid size={14} />,   label: 'Board' },
     { id: 'list',     icon: <List size={14} />,         label: 'List' },
-    { id: 'calendar', icon: <CalendarDays size={14} />, label: 'Month' },
-    { id: 'week',     icon: <CalendarRange size={14} />,label: 'Week' },
-    { id: 'day',      icon: <Sun size={14} />,          label: 'Day' },
+    { id: 'calendar', icon: <CalendarDays size={14} />, label: 'Calendar' },
   ];
+
+  const CALENDAR_SUBS = [
+    { id: 'calendar', icon: <CalendarDays size={12} />, label: 'Month' },
+    { id: 'week',     icon: <CalendarRange size={12} />, label: 'Week' },
+    { id: 'day',      icon: <Sun size={12} />,           label: 'Day' },
+  ];
+
+  const isCalendarView = ['calendar', 'week', 'day'].includes(view);
 
   return (
     <Layout>
@@ -200,15 +206,17 @@ export default function ProjectPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* View Toggle */}
+          <div className="flex items-center gap-2">
+            {/* Main view toggle */}
             <div className="flex bg-app-bg border border-app-border rounded-lg p-1">
-              {VIEWS.map(({ id, icon, label }) => (
+              {MAIN_VIEWS.map(({ id, icon, label }) => (
                 <button
                   key={id}
-                  onClick={() => setView(id)}
+                  onClick={() => setView(id === 'calendar' && !isCalendarView ? 'calendar' : id)}
                   className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm font-medium transition ${
-                    view === id ? 'bg-brand-accent text-white' : 'text-slate-400 hover:text-slate-200'
+                    (id === 'calendar' ? isCalendarView : view === id)
+                      ? 'bg-brand-accent text-white'
+                      : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   {icon}
@@ -216,6 +224,24 @@ export default function ProjectPage() {
                 </button>
               ))}
             </div>
+
+            {/* Calendar sub-toggle */}
+            {isCalendarView && (
+              <div className="flex bg-app-bg border border-app-border rounded-lg p-1">
+                {CALENDAR_SUBS.map(({ id, icon, label }) => (
+                  <button
+                    key={id}
+                    onClick={() => setView(id)}
+                    className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium transition ${
+                      view === id ? 'bg-brand-accent/20 text-brand-accent' : 'text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    {icon}
+                    <span className="hidden sm:inline">{label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Members */}
             <div className="flex -space-x-2">
