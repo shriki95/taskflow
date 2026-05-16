@@ -130,6 +130,19 @@ export default function ProjectPage() {
     await taskGroupsApi.delete(groupId);
   }, []);
 
+  const handleColumnChange = useCallback(
+    async (taskId, newGroupId) => {
+      const original = tasks.find((t) => t.taskId === taskId)?.group_id ?? null;
+      setTasks((prev) => prev.map((t) => (t.taskId === taskId ? { ...t, group_id: newGroupId } : t)));
+      try {
+        await tasksApi.update(projectId, taskId, { group_id: newGroupId });
+      } catch {
+        setTasks((prev) => prev.map((t) => (t.taskId === taskId ? { ...t, group_id: original } : t)));
+      }
+    },
+    [tasks, projectId]
+  );
+
   const openCreateTask = (options = {}) => {
     if (typeof options === 'string') {
       setCreateStatus(options);
@@ -252,11 +265,16 @@ export default function ProjectPage() {
             {view === 'board' && (
               <KanbanBoard
                 tasks={tasks}
+                groups={groups}
                 members={members}
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
                 onDueDateChange={handleDueDateChange}
                 onAddTask={openCreateTask}
+                onColumnChange={handleColumnChange}
+                onGroupCreate={handleGroupCreate}
+                onGroupUpdate={handleGroupUpdate}
+                onGroupDelete={handleGroupDelete}
               />
             )}
             {view === 'list' && (
