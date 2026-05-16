@@ -33,6 +33,7 @@ const fmtTask = (t) => ({
   due_date: t.due_date || null,
   assignee_id: t.assignee_id || null,
   group_id: t.group_id || null,
+  duration_minutes: t.duration_minutes || null,
   created_by: t.created_by || null,
   created_at: t.created_at,
   updated_at: t.updated_at,
@@ -225,6 +226,7 @@ export const tasksApi = {
         due_date: fields.due_date || null,
         assignee_id: fields.assignee_id || null,
         group_id: fields.group_id || null,
+        duration_minutes: fields.duration_minutes || null,
         created_by: user.id,
       })
       .select().single();
@@ -247,7 +249,8 @@ export const tasksApi = {
     if (fields.priority !== undefined)    updates.priority = fields.priority;
     if (fields.due_date !== undefined)    updates.due_date = fields.due_date;
     if (fields.assignee_id !== undefined) updates.assignee_id = fields.assignee_id;
-    if (fields.group_id !== undefined)    updates.group_id = fields.group_id;
+    if (fields.group_id !== undefined)         updates.group_id = fields.group_id;
+    if (fields.duration_minutes !== undefined) updates.duration_minutes = fields.duration_minutes;
 
     const { data, error } = await supabase
       .from('tasks').update(updates).eq('id', taskId).select().single();

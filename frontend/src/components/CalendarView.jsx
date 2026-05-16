@@ -2,10 +2,11 @@ import { useState } from 'react';
 import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, isSameDay, isSameMonth, isToday,
-  addMonths, subMonths,
+  addMonths, subMonths, addDays,
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
 import Avatar from './Avatar';
+import { isRTL } from '../utils/text';
 
 const PRIORITY_BAR = {
   high:   'bg-red-500',
@@ -13,16 +14,24 @@ const PRIORITY_BAR = {
   low:    'bg-emerald-500',
 };
 
-function TaskChip({ task, members, onClick, onStatusChange }) {
+// Returns all dates a task spans (based on due_date and duration_minutes)
+function getTaskSpan(task) {
+  if (!task.due_date) return [];
+  const due = new Date(task.due_date);
+  if (!task.duration_minutes || task.duration_minutes < 1440) return [due];
+  const days = Math.ceil(task.duration_minutes / 1440);
+  return Array.from({ length: days }, (_, i) => addDays(due, -(days - 1 - i)));
+}
+
+function TaskChip({ task, members, onClick, onStatusChange, isFirst, isMultiDay }) {
   const assignee = members.find((m) => m.userId === task.assignee_id);
   const isDone = task.status === 'done';
 
-  const handleToggle = (e) => {
-    e.stopPropagation();
-    if (onStatusChange) {
-      onStatusChange(task.taskId, isDone ? 'todo' : 'done');
-    }
-  };
+  if (!isFirst && isMultiDay) {
+    return (
+      <div className={`h-4 rounded-sm mb-0.5 ${PRIORITY_BAR[task.priority] || 'bg-slate-500'} opacity-40`} />
+    );
+  }
 
   return (
     <div
@@ -33,9 +42,8 @@ function TaskChip({ task, members, onClick, onStatusChange }) {
         bg-app-sidebar border border-app-border`}
     >
       <button
-        onClick={handleToggle}
+        onClick={(e) => { e.stopPropagation(); if (onStatusChange) onStatusChange(task.taskId, isDone ? 'todo' : 'done'); }}
         className="flex-shrink-0 focus:outline-none"
-        title={isDone ? 'Mark as to-do' : 'Mark as done'}
       >
         {isDone
           ? <CheckCircle2 size={10} className="text-emerald-400" />
@@ -43,9 +51,13 @@ function TaskChip({ task, members, onClick, onStatusChange }) {
         }
       </button>
       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PRIORITY_BAR[task.priority] || 'bg-slate-500'}`} />
-      <span className={`truncate flex-1 ${isDone ? 'line-through text-slate-500' : 'text-slate-300'}`}>
+      <span
+        dir={isRTL(task.title) ? 'rtl' : 'ltr'}
+        className={`truncate flex-1 ${isDone ? 'line-through text-slate-500' : 'text-slate-300'}`}
+      >
         {task.title}
       </span>
+      {isMultiDay && <span className="text-slate-600 text-[9px] flex-shrink-0">→</span>}
       {assignee && (
         <span
           className="w-3.5 h-3.5 rounded-full flex-shrink-0 flex items-center justify-center text-[8px] font-bold text-white"
@@ -64,11 +76,22 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
   const monthStart = startOfMonth(current);
   const monthEnd   = endOfMonth(current);
   const gridStart  = startOfWeek(monthStart, { weekStartsOn: 0 });
-  const gridEnd    = endOfWeek(monthEnd,   { weekStartsOn: 0 });
+  const gridEnd    = endOfWeek(monthEnd, { weekStartsOn: 0 });
   const days       = eachDayOfInterval({ start: gridStart, end: gridEnd });
 
+  // Pre-compute spans for each task
+  const taskSpans = tasks
+    .filter((t) => t.due_date)
+    .map((t) => ({ task: t, span: getTaskSpan(t) }));
+
   const tasksForDay = (day) =>
-    tasks.filter((t) => t.due_date && isSameDay(new Date(t.due_date), day));
+    taskSpans
+      .filter(({ span }) => span.some((d) => isSameDay(d, day)))
+      .map(({ task, span }) => ({
+        task,
+        isFirst: isSameDay(span[0], day),
+        isMultiDay: span.length > 1,
+      }));
 
   const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -103,7 +126,6 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
 
       {/* Grid */}
       <div className="flex-1 overflow-auto">
-        {/* Day headers */}
         <div className="grid grid-cols-7 mb-1">
           {WEEKDAYS.map((d) => (
             <div key={d} className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wider py-1">
@@ -112,22 +134,21 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
           ))}
         </div>
 
-        {/* Days */}
         <div className="grid grid-cols-7 gap-px bg-app-border rounded-xl overflow-hidden border border-app-border">
           {days.map((day) => {
-            const dayTasks  = tasksForDay(day);
+            const dayEntries = tasksForDay(day);
             const inMonth   = isSameMonth(day, current);
             const todayFlag = isToday(day);
+            const visible   = dayEntries.slice(0, 3);
+            const overflow  = dayEntries.length - 3;
 
             return (
               <div
                 key={day.toISOString()}
                 className={`bg-app-bg p-1.5 min-h-[90px] transition-colors
                   ${inMonth ? '' : 'opacity-30'}
-                  ${todayFlag ? 'bg-brand-primary/40' : 'hover:bg-app-card/60'}
-                `}
+                  ${todayFlag ? 'bg-brand-primary/40' : 'hover:bg-app-card/60'}`}
               >
-                {/* Day number */}
                 <div className="flex items-center justify-end mb-1">
                   <span
                     className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full
@@ -137,18 +158,19 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                   </span>
                 </div>
 
-                {/* Tasks (max 3, then +N) */}
-                {dayTasks.slice(0, 3).map((t) => (
+                {visible.map(({ task, isFirst, isMultiDay }) => (
                   <TaskChip
-                    key={t.taskId}
-                    task={t}
+                    key={`${task.taskId}-${day.toISOString()}`}
+                    task={task}
                     members={members}
                     onClick={onTaskClick}
                     onStatusChange={onStatusChange}
+                    isFirst={isFirst}
+                    isMultiDay={isMultiDay}
                   />
                 ))}
-                {dayTasks.length > 3 && (
-                  <span className="text-xs text-slate-500 pl-1">+{dayTasks.length - 3} more</span>
+                {overflow > 0 && (
+                  <span className="text-xs text-slate-500 pl-1">+{overflow} more</span>
                 )}
               </div>
             );

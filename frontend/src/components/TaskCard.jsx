@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Calendar, CheckCircle2, Circle } from 'lucide-react';
+import { Calendar, CheckCircle2, Circle, Clock } from 'lucide-react';
 import { format, isPast, isToday } from 'date-fns';
 import Avatar from './Avatar';
+import { isRTL, formatDuration } from '../utils/text';
 
 const PRIORITY = {
   high: { label: 'High', cls: 'text-red-400 bg-red-400/10 border-red-400/20' },
@@ -55,17 +56,28 @@ export default function TaskCard({ task, members = [], onClick, onStatusChange, 
             : <Circle size={16} className="text-slate-600 hover:text-slate-400 transition-colors" />
           }
         </button>
-        <p className={`text-sm font-medium leading-snug line-clamp-2 group-hover:text-slate-100 flex-1
-          ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}>
+        <p
+          dir={isRTL(task.title) ? 'rtl' : 'ltr'}
+          className={`text-sm font-medium leading-snug line-clamp-2 group-hover:text-slate-100 flex-1
+            ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
+        >
           {task.title}
         </p>
       </div>
 
       {/* Footer */}
       <div className="flex items-center justify-between gap-2">
-        <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${priority.cls}`}>
-          {priority.label}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${priority.cls}`}>
+            {priority.label}
+          </span>
+          {formatDuration(task.duration_minutes) && (
+            <span className="flex items-center gap-0.5 text-xs text-slate-500 bg-app-bg border border-app-border px-1.5 py-0.5 rounded-full">
+              <Clock size={9} />
+              {formatDuration(task.duration_minutes)}
+            </span>
+          )}
+        </div>
 
         <div className="flex items-center gap-2">
           {editingDate ? (

@@ -41,10 +41,12 @@ CREATE TABLE IF NOT EXISTS tasks (
   priority      TEXT NOT NULL DEFAULT 'medium'  CHECK (priority IN ('low','medium','high')),
   due_date      DATE,
   assignee_id   UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  created_by    UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_by       UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  duration_minutes INTEGER,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+-- Existing DB: ALTER TABLE tasks ADD COLUMN IF NOT EXISTS duration_minutes INTEGER;
 
 -- ── Subtasks ──────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS subtasks (

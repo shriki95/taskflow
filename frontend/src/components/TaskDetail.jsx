@@ -3,10 +3,11 @@ import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import {
   X, Trash2, CheckSquare, Square, Send, ChevronDown, Flag, Calendar,
-  User, AlignLeft, Plus, Check, Layers,
+  User, AlignLeft, Plus, Check, Layers, Clock,
 } from 'lucide-react';
 import { tasksApi, subtasksApi, commentsApi } from '../api/supabase';
 import Avatar from './Avatar';
+import { isRTL, formatDuration, parseDuration } from '../utils/text';
 
 const STATUSES = [
   { value: 'todo', label: 'To Do', dot: 'bg-slate-400' },
@@ -53,6 +54,62 @@ function FieldSelect({ value, options, onChange, renderOption, renderValue }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+const DURATION_UNITS = [
+  { value: 'minutes', label: 'min' },
+  { value: 'hours',   label: 'h' },
+  { value: 'days',    label: 'd' },
+];
+
+function DurationField({ value, onChange }) {
+  const [unit, setUnit] = useState(() => {
+    if (!value) return 'hours';
+    if (value >= 1440) return 'days';
+    if (value >= 60) return 'hours';
+    return 'minutes';
+  });
+  const [raw, setRaw] = useState(() => {
+    if (!value) return '';
+    if (value >= 1440) return String(Math.round(value / 1440));
+    if (value >= 60) return String(parseFloat((value / 60).toFixed(1)));
+    return String(value);
+  });
+
+  const commit = () => {
+    const minutes = parseDuration(raw, unit);
+    onChange(minutes);
+  };
+
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-xs text-slate-600 w-20 flex-shrink-0 flex items-center gap-1">
+        <Clock size={11} /> Duration
+      </span>
+      <div className="flex items-center gap-1">
+        <input
+          type="number"
+          min="0"
+          step="0.5"
+          value={raw}
+          onChange={(e) => setRaw(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => e.key === 'Enter' && commit()}
+          placeholder="—"
+          className="w-16 bg-app-bg border border-app-border rounded-lg px-2.5 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [appearance:textfield]"
+        />
+        <select
+          value={unit}
+          onChange={(e) => { setUnit(e.target.value); setRaw(''); onChange(null); }}
+          className="bg-app-bg border border-app-border rounded-lg px-2 py-1.5 text-sm text-slate-400 focus:outline-none focus:border-brand-accent transition"
+        >
+          {DURATION_UNITS.map((u) => (
+            <option key={u.value} value={u.value}>{u.label}</option>
+          ))}
+        </select>
+      </div>
     </div>
   );
 }
@@ -220,6 +277,7 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
           <textarea
             ref={titleRef}
             autoFocus
+            dir={isRTL(title) ? 'rtl' : 'ltr'}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onBlur={handleTitleBlur}
@@ -229,6 +287,7 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
           />
         ) : (
           <h2
+            dir={isRTL(title) ? 'rtl' : 'ltr'}
             onClick={() => { setEditingTitle(true); setTimeout(() => titleRef.current?.focus(), 10); }}
             className="text-lg font-semibold text-slate-100 leading-snug cursor-text hover:text-white"
           >
@@ -352,6 +411,12 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
               className="bg-app-bg border border-app-border rounded-lg px-2.5 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [color-scheme:dark]"
             />
           </div>
+
+          {/* Duration */}
+          <DurationField
+            value={task.duration_minutes}
+            onChange={(minutes) => updateField({ duration_minutes: minutes })}
+          />
         </div>
 
         <div className="border-t border-app-border" />
@@ -366,6 +431,7 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
             <textarea
               ref={descRef}
               autoFocus
+              dir={isRTL(description) ? 'rtl' : 'ltr'}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               onBlur={handleDescBlur}
@@ -375,10 +441,11 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
             />
           ) : (
             <div
+              dir={isRTL(description) ? 'rtl' : 'ltr'}
               onClick={() => { setEditingDesc(true); setTimeout(() => descRef.current?.focus(), 10); }}
               className="text-sm text-slate-400 cursor-text hover:text-slate-300 min-h-[40px] px-1 py-0.5 rounded hover:bg-app-card/50 transition"
             >
-              {description || <span className="text-slate-600">Add a description…</span>}
+              {description || <span className="text-slate-600" dir="ltr">Add a description…</span>}
             </div>
           )}
         </div>

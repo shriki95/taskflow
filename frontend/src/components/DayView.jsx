@@ -1,43 +1,75 @@
 import { useState } from 'react';
-import { format, addDays, subDays, isSameDay, isToday } from 'date-fns';
+import { format, addDays, subDays, isSameDay, isToday, addDays as addDaysUtil } from 'date-fns';
 import { ChevronLeft, ChevronRight, CheckCircle2, Circle, Clock, Calendar, Flag } from 'lucide-react';
 import Avatar from './Avatar';
-
-const STATUS_SECTIONS = [
-  { id: 'todo',        label: 'To Do',       dot: 'bg-slate-500' },
-  { id: 'in_progress', label: 'In Progress',  dot: 'bg-blue-500' },
-  { id: 'done',        label: 'Done',         dot: 'bg-emerald-500' },
-];
+import { isRTL, formatDuration } from '../utils/text';
 
 const PRIORITY_COLOR = { high: 'text-red-400', medium: 'text-amber-400', low: 'text-emerald-400' };
+const PRIORITY_BORDER = { high: 'border-l-red-500', medium: 'border-l-amber-500', low: 'border-l-emerald-500' };
+const PRIORITY_BG = { high: 'bg-red-500/5', medium: 'bg-amber-500/5', low: 'bg-emerald-500/5' };
 
-const STATUS_ICON = {
-  todo:        <Circle size={15} className="text-slate-500" />,
-  in_progress: <Clock size={15} className="text-blue-400" />,
-  done:        <CheckCircle2 size={15} className="text-emerald-400" />,
-};
+function blockHeight(duration_minutes) {
+  if (!duration_minutes) return 64;
+  const hours = duration_minutes / 60;
+  return Math.max(64, Math.min(Math.round(hours * 72), 360));
+}
 
-function TaskRow({ task, members, onClick, onStatusChange }) {
+function getTaskSpan(task) {
+  if (!task.due_date) return [];
+  const due = new Date(task.due_date);
+  if (!task.duration_minutes || task.duration_minutes < 1440) return [due];
+  const days = Math.ceil(task.duration_minutes / 1440);
+  return Array.from({ length: days }, (_, i) => addDays(due, -(days - 1 - i)));
+}
+
+function DayTaskBlock({ task, members, onClick, onStatusChange }) {
   const isDone = task.status === 'done';
   const assignee = members.find((m) => m.userId === task.assignee_id);
+  const height = blockHeight(task.duration_minutes);
+  const durLabel = formatDuration(task.duration_minutes);
+  const pb = PRIORITY_BORDER[task.priority] || 'border-l-slate-500';
+  const bg = PRIORITY_BG[task.priority] || '';
 
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-app-sidebar/50 transition border-b border-app-border last:border-0 ${isDone ? 'opacity-60' : ''}`}
+      style={{ height: `${height}px` }}
+      className={`flex flex-col gap-1 px-4 py-3 cursor-pointer rounded-xl border border-app-border
+        border-l-4 ${pb} ${bg} hover:bg-app-card/70 transition overflow-hidden
+        ${isDone ? 'opacity-60' : ''}`}
     >
-      <button
-        onClick={(e) => { e.stopPropagation(); onStatusChange(task.taskId, isDone ? 'todo' : 'done'); }}
-        className="flex-shrink-0 focus:outline-none hover:opacity-70 transition-opacity"
-        title={isDone ? 'Mark as to-do' : 'Mark as done'}
-      >
-        {STATUS_ICON[task.status] || STATUS_ICON.todo}
-      </button>
-      <span className={`text-sm font-medium flex-1 min-w-0 truncate ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}>
-        {task.title}
-      </span>
-      <Flag size={12} className={`flex-shrink-0 ${PRIORITY_COLOR[task.priority] || 'text-slate-600'}`} />
-      {assignee && <Avatar name={assignee.name} color={assignee.avatar_color} size="xs" />}
+      {/* Top row */}
+      <div className="flex items-start gap-2.5">
+        <button
+          onClick={(e) => { e.stopPropagation(); onStatusChange(task.taskId, isDone ? 'todo' : 'done'); }}
+          className="flex-shrink-0 mt-0.5 focus:outline-none hover:opacity-70 transition-opacity"
+        >
+          {isDone
+            ? <CheckCircle2 size={16} className="text-emerald-400" />
+            : <Circle size={16} className="text-slate-500 hover:text-slate-300 transition-colors" />
+          }
+        </button>
+        <span
+          dir={isRTL(task.title) ? 'rtl' : 'ltr'}
+          className={`text-sm font-semibold leading-snug flex-1 ${isDone ? 'line-through text-slate-500' : 'text-slate-100'}`}
+        >
+          {task.title}
+        </span>
+        <Flag size={12} className={`flex-shrink-0 mt-0.5 ${PRIORITY_COLOR[task.priority] || 'text-slate-600'}`} />
+      </div>
+
+      {/* Duration + assignee (shown when block is tall enough) */}
+      {height >= 96 && (
+        <div className="flex items-center gap-3 pl-7 mt-auto">
+          {durLabel && (
+            <span className="flex items-center gap-1 text-xs text-slate-500">
+              <Clock size={11} />
+              {durLabel}
+            </span>
+          )}
+          {assignee && <Avatar name={assignee.name} color={assignee.avatar_color} size="xs" />}
+        </div>
+      )}
     </div>
   );
 }
@@ -45,7 +77,12 @@ function TaskRow({ task, members, onClick, onStatusChange }) {
 export default function DayView({ tasks, members, onTaskClick, onStatusChange }) {
   const [current, setCurrent] = useState(new Date());
 
-  const dayTasks = tasks.filter((t) => t.due_date && isSameDay(new Date(t.due_date), current));
+  const dayTasks = tasks.filter((t) => {
+    if (!t.due_date) return false;
+    const span = getTaskSpan(t);
+    return span.some((d) => isSameDay(d, current));
+  });
+
   const today = isToday(current);
 
   return (
@@ -92,35 +129,16 @@ export default function DayView({ tasks, members, onTaskClick, onStatusChange })
             <p className="text-sm">No tasks due on this day</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {STATUS_SECTIONS.map((section) => {
-              const sectionTasks = dayTasks.filter((t) => t.status === section.id);
-              if (sectionTasks.length === 0) return null;
-              return (
-                <div key={section.id}>
-                  <div className="flex items-center gap-2 mb-2 px-1">
-                    <span className={`w-2 h-2 rounded-full ${section.dot}`} />
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                      {section.label}
-                    </span>
-                    <span className="text-xs text-slate-600 bg-app-card border border-app-border rounded-full px-1.5">
-                      {sectionTasks.length}
-                    </span>
-                  </div>
-                  <div className="bg-app-card border border-app-border rounded-xl overflow-hidden">
-                    {sectionTasks.map((task) => (
-                      <TaskRow
-                        key={task.taskId}
-                        task={task}
-                        members={members}
-                        onClick={() => onTaskClick(task)}
-                        onStatusChange={onStatusChange}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+          <div className="flex flex-col gap-2">
+            {dayTasks.map((task) => (
+              <DayTaskBlock
+                key={task.taskId}
+                task={task}
+                members={members}
+                onClick={() => onTaskClick(task)}
+                onStatusChange={onStatusChange}
+              />
+            ))}
           </div>
         )}
       </div>

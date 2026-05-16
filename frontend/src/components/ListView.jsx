@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { format, isPast, isToday } from 'date-fns';
 import { Calendar, Plus, Circle, CheckCircle2, Clock, Trash2, FolderPlus } from 'lucide-react';
 import Avatar from './Avatar';
+import { isRTL } from '../utils/text';
 
 const PRIORITY = {
   high: { label: 'High', cls: 'text-red-400 bg-red-400/10' },
@@ -46,7 +47,10 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange }) {
         </button>
       </td>
       <td className="py-3 pr-3 min-w-0">
-        <span className={`text-sm font-medium ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}>
+        <span
+          dir={isRTL(task.title) ? 'rtl' : 'ltr'}
+          className={`text-sm font-medium block ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
+        >
           {task.title}
         </span>
       </td>

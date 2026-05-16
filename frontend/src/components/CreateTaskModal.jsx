@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { X, AlertCircle } from 'lucide-react';
 import { tasksApi } from '../api/supabase';
 import Avatar from './Avatar';
+import { isRTL, parseDuration } from '../utils/text';
 
 const STATUSES = [
   { value: 'todo', label: 'To Do' },
@@ -33,7 +34,10 @@ export default function CreateTaskModal({
     due_date: '',
     assignee_id: '',
     group_id: initialGroupId || '',
+    duration_minutes: null,
   });
+  const [durationRaw, setDurationRaw] = useState('');
+  const [durationUnit, setDurationUnit] = useState('hours');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -51,6 +55,7 @@ export default function CreateTaskModal({
         due_date: form.due_date || null,
         assignee_id: form.assignee_id || null,
         group_id: form.group_id || null,
+        duration_minutes: parseDuration(durationRaw, durationUnit),
       };
       const { data } = await tasksApi.create(projectId, payload);
       onCreate(data);
@@ -100,6 +105,7 @@ export default function CreateTaskModal({
               autoFocus
               type="text"
               required
+              dir={isRTL(form.title) ? 'rtl' : 'ltr'}
               value={form.title}
               onChange={(e) => set('title', e.target.value)}
               placeholder="What needs to be done?"
@@ -113,6 +119,7 @@ export default function CreateTaskModal({
               Description
             </label>
             <textarea
+              dir={isRTL(form.description) ? 'rtl' : 'ltr'}
               value={form.description}
               onChange={(e) => set('description', e.target.value)}
               placeholder="Add more details…"
@@ -188,6 +195,31 @@ export default function CreateTaskModal({
                 {members.map((m) => (
                   <option key={m.userId} value={m.userId}>{m.name}</option>
                 ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Duration */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Duration</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                step="0.5"
+                value={durationRaw}
+                onChange={(e) => setDurationRaw(e.target.value)}
+                placeholder="—"
+                className="w-24 bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent transition [appearance:textfield]"
+              />
+              <select
+                value={durationUnit}
+                onChange={(e) => { setDurationUnit(e.target.value); setDurationRaw(''); }}
+                className="bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition"
+              >
+                <option value="minutes">Minutes</option>
+                <option value="hours">Hours</option>
+                <option value="days">Days</option>
               </select>
             </div>
           </div>
