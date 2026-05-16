@@ -329,6 +329,7 @@ export default function ProjectPage() {
                 members={members}
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
+                onDueDateChange={handleDueDateChange}
                 onDayClick={handleDayClick}
               />
             )}
@@ -339,6 +340,7 @@ export default function ProjectPage() {
                 members={members}
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
+                onDueDateChange={handleDueDateChange}
                 initialDate={calNavDate}
                 onDayClick={handleDayClick}
               />

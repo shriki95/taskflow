@@ -7,9 +7,7 @@ import {
 import { ChevronLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
 import { isRTL } from '../utils/text';
 
-const PRIORITY_BAR    = { high: 'bg-red-500',    medium: 'bg-amber-500',    low: 'bg-emerald-500' };
-const PRIORITY_BORDER = { high: 'border-l-red-500', medium: 'border-l-amber-500', low: 'border-l-emerald-500' };
-const PRIORITY_BG     = { high: 'bg-red-500/5',  medium: 'bg-amber-500/5',  low: 'bg-emerald-500/5' };
+const PRIORITY_BAR = { high: 'bg-red-500', medium: 'bg-amber-500', low: 'bg-emerald-500' };
 
 const SPAN_BAR_H = 22;
 
@@ -46,8 +44,10 @@ function TaskChip({ task, onClick, onStatusChange, compact = false }) {
   const iconSize = compact ? 8 : 10;
   return (
     <div
+      draggable
+      onDragStart={(e) => { e.stopPropagation(); e.dataTransfer.setData('taskId', task.taskId); e.dataTransfer.effectAllowed = 'move'; }}
       onClick={(e) => { e.stopPropagation(); onClick(task); }}
-      className={`flex items-center gap-0.5 px-1 rounded cursor-pointer
+      className={`flex items-center gap-0.5 px-1 rounded cursor-grab active:cursor-grabbing
         hover:opacity-80 transition
         ${compact ? 'py-px mb-px text-[9px]' : 'py-0.5 mb-0.5 text-xs'}
         ${isDone ? 'opacity-50' : ''}
@@ -72,9 +72,45 @@ function TaskChip({ task, onClick, onStatusChange, compact = false }) {
   );
 }
 
-export default function CalendarView({ tasks, members, onTaskClick, onStatusChange, onDayClick }) {
-  const [current, setCurrent] = useState(new Date());
-  const [popover, setPopover]  = useState(null);
+function SpanChip({ task, onTaskClick, onStatusChange, startsThisWeek, endsThisWeek, compact = false }) {
+  const isDone = task.status === 'done';
+  const iconSize = compact ? 8 : 10;
+  return (
+    <div
+      draggable
+      onDragStart={(e) => { e.stopPropagation(); e.dataTransfer.setData('taskId', task.taskId); e.dataTransfer.effectAllowed = 'move'; }}
+      onClick={(e) => { e.stopPropagation(); onTaskClick(task); }}
+      className={`flex items-center gap-0.5 px-1 rounded cursor-grab active:cursor-grabbing
+        hover:opacity-80 transition h-full
+        ${compact ? 'text-[9px]' : 'text-xs'}
+        ${isDone ? 'opacity-50' : ''}
+        bg-app-sidebar border border-app-border`}
+    >
+      <button
+        onClick={(e) => { e.stopPropagation(); onStatusChange(task.taskId, isDone ? 'todo' : 'done'); }}
+        className="flex-shrink-0 focus:outline-none"
+      >
+        {isDone
+          ? <CheckCircle2 size={iconSize} className="text-emerald-400" />
+          : <Circle size={iconSize} className="text-slate-600 hover:text-slate-400 transition-colors" />}
+      </button>
+      {!startsThisWeek && <span className="opacity-40 text-[8px] flex-shrink-0">◀</span>}
+      <span className={`rounded-full flex-shrink-0 ${PRIORITY_BAR[task.priority] || 'bg-slate-500'} ${compact ? 'w-1 h-1' : 'w-1.5 h-1.5'}`} />
+      <span
+        dir={isRTL(task.title) ? 'rtl' : 'ltr'}
+        className={`flex-1 leading-none truncate min-w-0 ${isDone ? 'line-through text-slate-500' : 'text-slate-300'}`}
+      >
+        {task.title}
+      </span>
+      {!endsThisWeek && <span className="opacity-40 text-[8px] flex-shrink-0">▶</span>}
+    </div>
+  );
+}
+
+export default function CalendarView({ tasks, members, onTaskClick, onStatusChange, onDayClick, onDueDateChange }) {
+  const [current, setCurrent]   = useState(new Date());
+  const [popover, setPopover]   = useState(null);
+  const [dragOver, setDragOver] = useState(null);
   const hideTimer = useRef(null);
 
   const monthStart = startOfMonth(current);
@@ -101,6 +137,15 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
   }, []);
   const startHide  = useCallback(() => { hideTimer.current = setTimeout(() => setPopover(null), 120); }, []);
   const cancelHide = useCallback(() => { clearTimeout(hideTimer.current); }, []);
+
+  const handleDrop = useCallback((e, day) => {
+    e.preventDefault();
+    setDragOver(null);
+    const taskId = e.dataTransfer.getData('taskId');
+    if (taskId && onDueDateChange) {
+      onDueDateChange(taskId, format(day, 'yyyy-MM-dd'));
+    }
+  }, [onDueDateChange]);
 
   const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -136,12 +181,8 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
             const weekLayout  = computeWeekSpanLayout(multiDaySpans, weekDays);
             const numSpanRows = weekLayout.reduce((max, { row }) => Math.max(max, row + 1), 0);
 
-            // Single CSS grid per week row:
-            // row 1           → date numbers (28px)
-            // rows 2..N+1     → spanning bars (SPAN_BAR_H px each, only when N > 0)
-            // last row        → single-day chips (auto height)
-            const DATE_ROW  = 1;
-            const CHIP_ROW  = numSpanRows + 2;
+            const DATE_ROW    = 1;
+            const CHIP_ROW    = numSpanRows + 2;
             const rowTemplate = `28px ${numSpanRows > 0 ? `repeat(${numSpanRows}, ${SPAN_BAR_H}px) ` : ''}88px`;
 
             return (
@@ -174,38 +215,24 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                   );
                 })}
 
-                {/* Spanning bars — placed between date row and chip row */}
-                {weekLayout.map(({ task, startCol, endCol, row, startsThisWeek, endsThisWeek }) => {
-                  const isDone = task.status === 'done';
-                  return (
-                    <div
-                      key={`s-${task.taskId}-w${wIdx}`}
-                      onClick={() => onTaskClick(task)}
-                      style={{ gridColumn: `${startCol + 1} / ${endCol + 2}`, gridRow: row + 2, background: 'transparent' }}
-                      className={`flex items-center gap-1 px-1.5 mx-0.5 my-0.5 rounded text-xs
-                        cursor-pointer hover:opacity-80 transition border-l-2
-                        bg-app-sidebar border border-app-border
-                        ${PRIORITY_BORDER[task.priority] || 'border-l-slate-500'}
-                        ${PRIORITY_BG[task.priority] || ''}
-                        ${isDone ? 'opacity-50' : ''}`}
-                    >
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onStatusChange(task.taskId, isDone ? 'todo' : 'done'); }}
-                        className="flex-shrink-0 focus:outline-none"
-                      >
-                        {isDone ? <CheckCircle2 size={9} className="text-emerald-400" /> : <Circle size={9} className="text-slate-600" />}
-                      </button>
-                      {!startsThisWeek && <span className="opacity-40 text-[8px] flex-shrink-0">◀</span>}
-                      <span
-                        dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-                        className={`flex-1 text-xs font-medium leading-snug truncate min-w-0 ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
-                      >
-                        {task.title}
-                      </span>
-                      {!endsThisWeek && <span className="opacity-40 text-[8px] flex-shrink-0">▶</span>}
-                    </div>
-                  );
-                })}
+                {/* Spanning bars */}
+                {weekLayout.map(({ task, startCol, endCol, row, startsThisWeek, endsThisWeek }) => (
+                  <div
+                    key={`s-${task.taskId}-w${wIdx}`}
+                    style={{ gridColumn: `${startCol + 1} / ${endCol + 2}`, gridRow: row + 2 }}
+                    className="px-0.5 py-0.5"
+                    onDragOver={(e) => { e.preventDefault(); }}
+                    onDrop={(e) => handleDrop(e, weekDays[startCol])}
+                  >
+                    <SpanChip
+                      task={task}
+                      onTaskClick={onTaskClick}
+                      onStatusChange={onStatusChange}
+                      startsThisWeek={startsThisWeek}
+                      endsThisWeek={endsThisWeek}
+                    />
+                  </div>
+                ))}
 
                 {/* Single-day chips */}
                 {weekDays.map((day, col) => {
@@ -218,16 +245,19 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                   const maxVisible  = count <= 3 ? 3 : count <= 5 ? 5 : 4;
                   const visible     = singleTasks.slice(0, maxVisible);
                   const overflow    = singleTasks.length - maxVisible;
+                  const isOver      = dragOver === isoDay;
                   return (
                     <div
                       key={`c-${isoDay}`}
                       style={{ gridColumn: col + 1, gridRow: CHIP_ROW }}
                       onClick={() => onDayClick && onDayClick(day)}
-                      className={`p-1 cursor-pointer overflow-hidden
-                        bg-app-bg
+                      onDragOver={(e) => { e.preventDefault(); setDragOver(isoDay); }}
+                      onDragLeave={() => setDragOver(null)}
+                      onDrop={(e) => handleDrop(e, day)}
+                      className={`p-1 cursor-pointer overflow-hidden transition-colors
                         ${col > 0 ? 'border-l border-app-border' : ''}
                         ${inMonth ? '' : 'opacity-40'}
-                        ${todayFlag ? '!bg-brand-accent/5' : 'hover:bg-app-card/40'}`}
+                        ${isOver ? 'bg-brand-accent/10' : todayFlag ? '!bg-brand-accent/5' : 'bg-app-bg hover:bg-app-card/40'}`}
                     >
                       {visible.map((task) => (
                         <TaskChip key={`${task.taskId}-${isoDay}`} task={task} onClick={onTaskClick} onStatusChange={onStatusChange} compact={compact} />

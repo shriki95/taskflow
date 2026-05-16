@@ -52,9 +52,11 @@ function SingleDayBlock({ task, members, onClick, onStatusChange }) {
 
   return (
     <div
+      draggable
+      onDragStart={(e) => { e.stopPropagation(); e.dataTransfer.setData('taskId', task.taskId); e.dataTransfer.effectAllowed = 'move'; }}
       onClick={() => onClick(task)}
       style={{ minHeight: `${height}px` }}
-      className={`flex flex-col gap-0.5 px-1.5 py-1 rounded-md text-xs cursor-pointer
+      className={`flex flex-col gap-0.5 px-1.5 py-1 rounded-md text-xs cursor-grab active:cursor-grabbing
         hover:opacity-80 transition mb-1 border-l-2
         ${PRIORITY_BORDER[task.priority] || 'border-l-slate-500'}
         ${PRIORITY_BG[task.priority] || ''}
@@ -97,8 +99,9 @@ function SingleDayBlock({ task, members, onClick, onStatusChange }) {
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export default function WeekView({ tasks, members, onTaskClick, onStatusChange, initialDate, onDayClick }) {
-  const [current, setCurrent] = useState(initialDate || new Date());
+export default function WeekView({ tasks, members, onTaskClick, onStatusChange, initialDate, onDayClick, onDueDateChange }) {
+  const [current, setCurrent]   = useState(initialDate || new Date());
+  const [dragOver, setDragOver] = useState(null);
 
   const weekStart = startOfWeek(current, { weekStartsOn: 0 });
   const weekEnd   = endOfWeek(current, { weekStartsOn: 0 });
@@ -114,6 +117,15 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
     taskSpans
       .filter(({ task, span }) => !isSpanTask(task) && span.some((d) => isSameDay(d, day)))
       .map(({ task }) => task);
+
+  const handleDrop = (e, day) => {
+    e.preventDefault();
+    setDragOver(null);
+    const taskId = e.dataTransfer.getData('taskId');
+    if (taskId && onDueDateChange) {
+      onDueDateChange(taskId, format(day, 'yyyy-MM-dd'));
+    }
+  };
 
   // Single unified grid:
   // rows 1..numSpanRows → spanning bars
@@ -180,10 +192,12 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
             return (
               <div
                 key={task.taskId}
+                draggable
+                onDragStart={(e) => { e.stopPropagation(); e.dataTransfer.setData('taskId', task.taskId); e.dataTransfer.effectAllowed = 'move'; }}
                 onClick={() => onTaskClick(task)}
                 style={{ gridColumn: `${startCol + 1} / ${endCol + 2}`, gridRow: row + 1 }}
                 className={`flex items-center gap-1 px-1.5 mx-1 my-1 rounded-md text-xs
-                  cursor-pointer hover:opacity-80 transition border-l-2
+                  cursor-grab active:cursor-grabbing hover:opacity-80 transition border-l-2
                   bg-app-sidebar border border-app-border
                   ${PRIORITY_BORDER[task.priority] || 'border-l-slate-500'}
                   ${PRIORITY_BG[task.priority] || ''}
@@ -214,13 +228,18 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
           {days.map((day, col) => {
             const singleTasks = singleTasksForDay(day);
             const todayFlag   = isToday(day);
+            const isoDay      = day.toISOString();
+            const isOver      = dragOver === isoDay;
             return (
               <div
                 key={col}
                 style={{ gridColumn: col + 1, gridRow: DAY_ROW }}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(isoDay); }}
+                onDragLeave={() => setDragOver(null)}
+                onDrop={(e) => handleDrop(e, day)}
                 className={`flex flex-col p-2 transition-colors
                   ${col > 0 ? 'border-l border-app-border' : ''}
-                  ${todayFlag ? 'bg-brand-accent/5' : 'bg-app-card/40'}`}
+                  ${isOver ? 'bg-brand-accent/10' : todayFlag ? 'bg-brand-accent/5' : 'bg-app-card/40'}`}
               >
                 {singleTasks.length === 0 ? (
                   <div className="flex-1 flex items-center justify-center">
