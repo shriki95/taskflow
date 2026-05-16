@@ -182,7 +182,7 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
 
         {/* Unified day area — spanning bars in top rows, day cells in bottom row, same grid */}
         <div
-          className="border border-app-border rounded-xl overflow-hidden flex-1"
+          className="border border-app-border rounded-xl overflow-hidden flex-1 bg-app-card/40"
           style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridTemplateRows: rowTemplate }}
         >
           {/* Spanning bars */}

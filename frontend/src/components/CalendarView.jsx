@@ -176,7 +176,7 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
           ))}
         </div>
 
-        <div className="border border-app-border rounded-xl overflow-hidden">
+        <div className="border border-app-border rounded-xl overflow-hidden bg-app-bg">
           {weeks.map((weekDays, wIdx) => {
             const weekLayout  = computeWeekSpanLayout(multiDaySpans, weekDays);
             const numSpanRows = weekLayout.reduce((max, { row }) => Math.max(max, row + 1), 0);
