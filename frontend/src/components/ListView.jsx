@@ -49,9 +49,13 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange }) {
       <td className="py-3 pr-3 min-w-0">
         <span
           dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-          className={`text-sm font-medium block ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
+          className={`text-sm font-medium line-clamp-2 ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
         >
           {task.title}
+        </span>
+        {/* Priority badge — shown inline on mobile only */}
+        <span className={`sm:hidden inline-flex mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${priority.cls}`}>
+          {priority.label}
         </span>
       </td>
       <td className="py-3 pr-3 w-24 hidden sm:table-cell">
@@ -253,7 +257,8 @@ export default function ListView({
             <th className="py-3 pr-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Task</th>
             <th className="py-3 pr-3 w-24 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Priority</th>
             <th className="py-3 pr-3 w-32 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Due date</th>
-            <th className="py-3 pr-4 w-10 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assignee</th>
+            <th className="py-3 pr-4 w-10 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Assignee</th>
+            <th className="py-3 pr-4 w-10 sm:hidden" />
           </tr>
         </thead>
         <tbody>
