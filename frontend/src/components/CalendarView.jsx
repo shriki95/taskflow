@@ -182,9 +182,9 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
 
       {/* Grid */}
       <div className="flex-1 overflow-auto">
-       <div className="min-w-[320px]">
+       <div>
         {/* Day-of-week headers */}
-        <div className="grid grid-cols-7 mb-1">
+        <div className="grid mb-1" style={{ gridTemplateColumns: 'repeat(7, minmax(44px, 1fr))' }}>
           {WEEKDAYS.map((d, i) => (
             <div key={d} className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wider py-1">
               <span className="hidden sm:inline">{d}</span>
@@ -205,8 +205,8 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
             return (
               <div
                 key={wIdx}
-                className={`grid grid-cols-7 ${wIdx > 0 ? 'border-t border-app-border' : ''}`}
-                style={{ gridTemplateRows: rowTemplate }}
+                className={`grid ${wIdx > 0 ? 'border-t border-app-border' : ''}`}
+                style={{ gridTemplateColumns: 'repeat(7, minmax(44px, 1fr))', gridTemplateRows: rowTemplate }}
               >
                 {/* Date numbers */}
                 {weekDays.map((day, col) => {

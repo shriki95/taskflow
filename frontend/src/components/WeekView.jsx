@@ -168,9 +168,12 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
       </div>
 
       <div className="flex-1 overflow-auto">
-       <div className="min-w-[480px] flex flex-col gap-2 h-full">
+       <div className="flex flex-col gap-2 h-full">
         {/* Day headers */}
-        <div className="grid grid-cols-7 divide-x divide-app-border border border-app-border rounded-xl overflow-hidden flex-shrink-0 bg-app-card/50">
+        <div
+          className="grid divide-x divide-app-border border border-app-border rounded-xl overflow-hidden flex-shrink-0 bg-app-card/50"
+          style={{ gridTemplateColumns: 'repeat(7, minmax(90px, 1fr))' }}
+        >
           {days.map((day, i) => {
             const todayFlag = isToday(day);
             const holidays  = showHolidays ? getHolidaysForDate(day) : [];
@@ -204,7 +207,7 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
         {/* Unified day area — spanning bars in top rows, day cells in bottom row, same grid */}
         <div
           className="border border-app-border rounded-xl overflow-hidden flex-1 bg-app-card/40"
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridTemplateRows: rowTemplate }}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(90px, 1fr))', gridTemplateRows: rowTemplate }}
         >
           {/* Spanning bars */}
           {multiDayLayout.map(({ task, startCol, endCol, row, startsThisWeek, endsThisWeek }) => {
