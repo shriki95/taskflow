@@ -241,11 +241,11 @@ export default function ProjectSettingsModal({ project, currentUserId, onClose, 
                 <div className="flex items-start gap-2">
                   <Trash2 size={15} className="text-red-400 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-red-300 leading-snug">
-                    אתה עומד למחוק את <span className="font-semibold">"{project.name}"</span> עם כל המשימות שבתוכו. פעולה זו אינה הפיכה.
+                    You're about to delete <span className="font-semibold">"{project.name}"</span> and all its tasks. This cannot be undone.
                   </p>
                 </div>
                 <p className="text-sm text-slate-300">
-                  כדי לוודא שאתה בטוח — <span className="font-semibold text-slate-100">כמה זה 2+2?</span>
+                  To confirm, answer this: <span className="font-semibold text-slate-100">What is 2+2?</span>
                 </p>
                 <input
                   autoFocus
@@ -253,7 +253,7 @@ export default function ProjectSettingsModal({ project, currentUserId, onClose, 
                   value={deleteAnswer}
                   onChange={(e) => setDeleteAnswer(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && deleteAnswer.trim() === '4' && handleDelete()}
-                  placeholder="התשובה שלך…"
+                  placeholder="Your answer…"
                   className="w-full bg-app-bg border border-red-500/30 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-red-400 transition"
                 />
                 <div className="flex gap-2">
@@ -261,14 +261,14 @@ export default function ProjectSettingsModal({ project, currentUserId, onClose, 
                     onClick={() => { setConfirmDelete(false); setDeleteAnswer(''); }}
                     className="flex-1 py-2 text-sm text-slate-400 border border-app-border rounded-lg hover:bg-app-bg transition"
                   >
-                    ביטול
+                    Cancel
                   </button>
                   <button
                     onClick={handleDelete}
                     disabled={deleteAnswer.trim() !== '4' || deleting}
                     className="flex-1 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition"
                   >
-                    {deleting ? 'מוחק…' : 'מחק פרויקט'}
+                    {deleting ? 'Deleting…' : 'Delete project'}
                   </button>
                 </div>
               </div>
