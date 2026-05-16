@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { format } from 'date-fns';
+import { format, addDays, differenceInDays } from 'date-fns';
 import {
   X, Trash2, CheckSquare, Square, Send, ChevronDown, Flag, Calendar,
   User, AlignLeft, Plus, Check, Layers, Clock, CheckCircle2, Circle,
@@ -34,14 +34,6 @@ const TIME_PRESETS = [
   { value: 240,  label: '4 hours' },
   { value: 360,  label: '6 hours' },
   { value: 480,  label: '8 hours' },
-];
-
-const SPAN_OPTIONS = [
-  { value: '',  label: '— single day' },
-  ...Array.from({ length: 29 }, (_, i) => ({ value: String(i + 2), label: `${i + 2} days` })),
-  { value: '45', label: '45 days' },
-  { value: '60', label: '2 months' },
-  { value: '90', label: '3 months' },
 ];
 
 function FieldSelect({ value, options, onChange, renderOption, renderValue }) {
@@ -375,15 +367,21 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
                 onChange={(e) => updateField({ due_date: e.target.value || null })}
                 className="bg-app-bg border border-app-border rounded-lg px-2.5 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [color-scheme:dark]"
               />
-              <select
-                value={task.span_days ? String(task.span_days) : ''}
-                onChange={(e) => updateField({ span_days: e.target.value ? Number(e.target.value) : null })}
-                className="bg-app-bg border border-app-border rounded-lg px-2 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition"
-              >
-                {SPAN_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
+              <input
+                type="date"
+                title="End date"
+                value={task.due_date && task.span_days
+                  ? format(addDays(new Date(task.due_date), task.span_days - 1), 'yyyy-MM-dd')
+                  : ''}
+                min={task.due_date ? format(addDays(new Date(task.due_date), 1), 'yyyy-MM-dd') : ''}
+                disabled={!task.due_date}
+                onChange={(e) => {
+                  if (!e.target.value || !task.due_date) { updateField({ span_days: null }); return; }
+                  const diff = differenceInDays(new Date(e.target.value), new Date(task.due_date));
+                  updateField({ span_days: diff >= 1 ? diff + 1 : null });
+                }}
+                className="bg-app-bg border border-app-border rounded-lg px-2.5 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [color-scheme:dark] disabled:opacity-35 disabled:cursor-not-allowed"
+              />
             </div>
           </FieldRow>
 

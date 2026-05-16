@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { format, addDays, differenceInDays } from 'date-fns';
 import { X, AlertCircle } from 'lucide-react';
 import { tasksApi } from '../api/supabase';
 import Avatar from './Avatar';
@@ -19,14 +20,6 @@ const TIME_PRESETS = [
   { value: 480,  label: '8 hours' },
 ];
 
-const SPAN_PRESETS = [
-  { value: null, label: '— single day' },
-  { value: 2,    label: '2 days' },
-  { value: 3,    label: '3 days' },
-  { value: 5,    label: '5 days' },
-  { value: 7,    label: '1 week' },
-  { value: 14,   label: '2 weeks' },
-];
 
 const STATUSES = [
   { value: 'todo', label: 'To Do' },
@@ -208,16 +201,21 @@ export default function CreateTaskModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Spans</label>
-              <select
-                value={form.span_days ?? ''}
-                onChange={(e) => set('span_days', e.target.value ? Number(e.target.value) : null)}
-                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-300 focus:outline-none focus:border-brand-accent transition"
-              >
-                {SPAN_PRESETS.map((p) => (
-                  <option key={p.value ?? 'none'} value={p.value ?? ''}>{p.label}</option>
-                ))}
-              </select>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">End date</label>
+              <input
+                type="date"
+                value={form.due_date && form.span_days
+                  ? format(addDays(new Date(form.due_date), form.span_days - 1), 'yyyy-MM-dd')
+                  : ''}
+                min={form.due_date ? format(addDays(new Date(form.due_date), 1), 'yyyy-MM-dd') : ''}
+                disabled={!form.due_date}
+                onChange={(e) => {
+                  if (!e.target.value || !form.due_date) { set('span_days', null); return; }
+                  const diff = differenceInDays(new Date(e.target.value), new Date(form.due_date));
+                  set('span_days', diff >= 1 ? diff + 1 : null);
+                }}
+                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition [color-scheme:dark] disabled:opacity-35 disabled:cursor-not-allowed"
+              />
             </div>
           </div>
 
