@@ -29,14 +29,19 @@ function TaskChip({ task, members, onClick, onStatusChange, isFirst, isMultiDay 
     return (
       <div
         onClick={(e) => { e.stopPropagation(); onClick(task); }}
-        className="flex items-start gap-1 px-1 py-0.5 rounded text-xs cursor-pointer
-          hover:opacity-90 transition mb-0.5 opacity-70
-          bg-app-sidebar border border-app-border border-l-2"
-        style={{ borderLeftColor: task.priority === 'high' ? '#ef4444' : task.priority === 'low' ? '#10b981' : '#f59e0b' }}
+        className={`flex items-start gap-1 px-1 py-0.5 rounded text-xs cursor-pointer
+          hover:opacity-80 transition mb-0.5
+          ${isDone ? 'opacity-50' : ''}
+          bg-app-sidebar border border-app-border`}
       >
-        <span className="text-slate-400 leading-snug break-words min-w-0 flex-1" dir={isRTL(task.title) ? 'rtl' : 'ltr'}>
+        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1 ${PRIORITY_BAR[task.priority] || 'bg-slate-500'}`} />
+        <span
+          dir={isRTL(task.title) ? 'rtl' : 'ltr'}
+          className={`flex-1 leading-snug break-words min-w-0 ${isDone ? 'line-through text-slate-500' : 'text-slate-300'}`}
+        >
           {task.title}
         </span>
+        <span className="text-slate-600 text-[9px] flex-shrink-0 mt-0.5">→</span>
       </div>
     );
   }

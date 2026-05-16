@@ -9,11 +9,6 @@ import { isRTL, formatDuration } from '../utils/text';
 const PRIORITY_BAR    = { high: 'bg-red-500',    medium: 'bg-amber-500',    low: 'bg-emerald-500'    };
 const PRIORITY_BORDER = { high: 'border-l-red-500', medium: 'border-l-amber-500', low: 'border-l-emerald-500' };
 const PRIORITY_BG     = { high: 'bg-red-500/5',  medium: 'bg-amber-500/5',  low: 'bg-emerald-500/5'  };
-const PRIORITY_SPAN   = {
-  high:   'bg-red-500/15 border-red-500/40 text-red-200',
-  medium: 'bg-amber-500/15 border-amber-500/40 text-amber-200',
-  low:    'bg-emerald-500/15 border-emerald-500/40 text-emerald-200',
-};
 
 function getTaskSpan(task) {
   if (!task.due_date) return [];
@@ -181,16 +176,18 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
             >
               {multiDayLayout.map(({ task, startCol, endCol, row, startsThisWeek, endsThisWeek }) => {
                 const isDone  = task.status === 'done';
-                const spanCls = PRIORITY_SPAN[task.priority] || 'bg-slate-500/15 border-slate-500/30 text-slate-300';
                 const durLabel = formatDuration(task.duration_minutes);
                 return (
                   <div
                     key={task.taskId}
                     onClick={() => onTaskClick(task)}
                     style={{ gridColumn: `${startCol + 1} / ${endCol + 2}`, gridRow: row + 1 }}
-                    className={`flex items-start gap-1.5 px-2 py-1.5 mx-0.5 my-0.5 rounded-md text-xs
-                      border cursor-pointer hover:opacity-80 transition min-h-[28px]
-                      ${spanCls} ${isDone ? 'opacity-40' : ''}`}
+                    className={`flex items-start gap-1.5 px-1.5 py-1 mx-0.5 my-0.5 rounded-md text-xs
+                      cursor-pointer hover:opacity-80 transition min-h-[28px] border-l-2
+                      bg-app-sidebar border border-app-border
+                      ${PRIORITY_BORDER[task.priority] || 'border-l-slate-500'}
+                      ${PRIORITY_BG[task.priority] || ''}
+                      ${isDone ? 'opacity-50' : ''}`}
                   >
                     <button
                       onClick={(e) => { e.stopPropagation(); onStatusChange(task.taskId, isDone ? 'todo' : 'done'); }}
@@ -201,7 +198,7 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
                     {!startsThisWeek && <span className="opacity-40 text-[8px] flex-shrink-0 mt-0.5">◀</span>}
                     <span
                       dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-                      className={`flex-1 font-medium leading-snug break-words min-w-0 ${isDone ? 'line-through' : ''}`}
+                      className={`flex-1 font-medium leading-snug break-words min-w-0 ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
                     >
                       {task.title}
                     </span>
