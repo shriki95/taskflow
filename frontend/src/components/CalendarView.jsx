@@ -17,9 +17,8 @@ const PRIORITY_BAR = {
 function getTaskSpan(task) {
   if (!task.due_date) return [];
   const due = new Date(task.due_date);
-  // Tasks < 2 days (i.e. 1 day or hours/minutes) appear as a single chip
-  if (!task.duration_minutes || task.duration_minutes < 2880) return [due];
-  const days = Math.ceil(task.duration_minutes / 1440);
+  if (!task.span_days || task.span_days <= 1) return [due];
+  const days = task.span_days;
   return Array.from({ length: days }, (_, i) => addDays(due, -(days - 1 - i)));
 }
 
@@ -29,7 +28,17 @@ function TaskChip({ task, members, onClick, onStatusChange, isFirst, isMultiDay 
 
   if (!isFirst && isMultiDay) {
     return (
-      <div className={`h-4 rounded-sm mb-0.5 ${PRIORITY_BAR[task.priority] || 'bg-slate-500'} opacity-40`} />
+      <div
+        onClick={(e) => { e.stopPropagation(); onClick(task); }}
+        className={`flex items-center gap-1 px-1 py-0.5 rounded text-xs cursor-pointer
+          hover:opacity-90 transition mb-0.5 truncate opacity-70
+          bg-app-sidebar border border-app-border border-l-2`}
+        style={{ borderLeftColor: task.priority === 'high' ? '#ef4444' : task.priority === 'low' ? '#10b981' : '#f59e0b' }}
+      >
+        <span className="truncate flex-1 text-slate-400" dir={isRTL(task.title) ? 'rtl' : 'ltr'}>
+          {task.title}
+        </span>
+      </div>
     );
   }
 

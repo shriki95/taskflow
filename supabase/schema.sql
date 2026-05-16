@@ -43,10 +43,12 @@ CREATE TABLE IF NOT EXISTS tasks (
   assignee_id   UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   created_by       UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   duration_minutes INTEGER,
+  span_days        INTEGER,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 -- Existing DB: ALTER TABLE tasks ADD COLUMN IF NOT EXISTS duration_minutes INTEGER;
+-- Existing DB: ALTER TABLE tasks ADD COLUMN IF NOT EXISTS span_days INTEGER;
 
 -- ── Subtasks ──────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS subtasks (

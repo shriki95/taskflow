@@ -15,12 +15,11 @@ const PRIORITY_SPAN   = {
   low:    'bg-emerald-500/15 border-emerald-500/40 text-emerald-200',
 };
 
-// Returns span of dates; tasks < 1 day always return single-element array
 function getTaskSpan(task) {
   if (!task.due_date) return [];
   const due = new Date(task.due_date);
-  if (!task.duration_minutes || task.duration_minutes < 1440) return [due];
-  const days = Math.ceil(task.duration_minutes / 1440);
+  if (!task.span_days || task.span_days <= 1) return [due];
+  const days = task.span_days;
   return Array.from({ length: days }, (_, i) => addDays(due, -(days - 1 - i)));
 }
 
@@ -116,8 +115,8 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
     .filter((t) => t.due_date)
     .map((t) => ({ task: t, span: getTaskSpan(t) }));
 
-  // Separate day-span tasks from hour/minute tasks
-  const isSpanTask = (task) => task.duration_minutes && task.duration_minutes >= 1440;
+  // Separate span tasks (calendar days) from time-estimate tasks (hours/minutes)
+  const isSpanTask = (task) => task.span_days && task.span_days >= 2;
 
   const multiDaySpans  = taskSpans.filter(({ task }) => isSpanTask(task));
   const multiDayLayout = computeMultiDayLayout(multiDaySpans, days);

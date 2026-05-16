@@ -6,23 +6,26 @@ import Avatar from './Avatar';
 import { isRTL } from '../utils/text';
 
 const TIME_PRESETS = [
-  { value: null,  label: '— no estimate' },
-  { value: 5,     label: '5 min' },
-  { value: 15,    label: '15 min' },
-  { value: 30,    label: '30 min' },
-  { value: 60,    label: '1 hour' },
-  { value: 90,    label: '1.5 hours' },
-  { value: 120,   label: '2 hours' },
-  { value: 180,   label: '3 hours' },
-  { value: 240,   label: '4 hours' },
-  { value: 360,   label: '6 hours' },
-  { value: 480,   label: '8 hours' },
-  { value: 1440,  label: '1 day' },
-  { value: 2880,  label: '2 days' },
-  { value: 4320,  label: '3 days' },
-  { value: 7200,  label: '5 days' },
-  { value: 10080, label: '1 week' },
-  { value: 20160, label: '2 weeks' },
+  { value: null, label: '— no estimate' },
+  { value: 5,    label: '5 min' },
+  { value: 15,   label: '15 min' },
+  { value: 30,   label: '30 min' },
+  { value: 60,   label: '1 hour' },
+  { value: 90,   label: '1.5 hours' },
+  { value: 120,  label: '2 hours' },
+  { value: 180,  label: '3 hours' },
+  { value: 240,  label: '4 hours' },
+  { value: 360,  label: '6 hours' },
+  { value: 480,  label: '8 hours' },
+];
+
+const SPAN_PRESETS = [
+  { value: null, label: '— single day' },
+  { value: 2,    label: '2 days' },
+  { value: 3,    label: '3 days' },
+  { value: 5,    label: '5 days' },
+  { value: 7,    label: '1 week' },
+  { value: 14,   label: '2 weeks' },
 ];
 
 const STATUSES = [
@@ -55,6 +58,7 @@ export default function CreateTaskModal({
     assignee_id: '',
     group_id: initialGroupId || '',
     duration_minutes: null,
+    span_days: null,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -74,6 +78,7 @@ export default function CreateTaskModal({
         assignee_id: form.assignee_id || null,
         group_id: form.group_id || null,
         duration_minutes: form.duration_minutes,
+        span_days: form.span_days,
       };
       const { data } = await tasksApi.create(projectId, payload);
       onCreate(data);
@@ -191,27 +196,43 @@ export default function CreateTaskModal({
             </div>
           )}
 
-          {/* Due date + estimated time */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Due date</label>
-            <div className="flex items-center gap-2">
+          {/* Due date + span days */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Due date</label>
               <input
                 type="date"
                 value={form.due_date}
                 onChange={(e) => set('due_date', e.target.value)}
-                className="flex-1 bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition [color-scheme:dark]"
+                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-brand-accent transition [color-scheme:dark]"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Spans</label>
               <select
-                value={form.duration_minutes ?? ''}
-                onChange={(e) => set('duration_minutes', e.target.value ? Number(e.target.value) : null)}
-                className="bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-300 focus:outline-none focus:border-brand-accent transition text-sm"
-                title="Estimated work time"
+                value={form.span_days ?? ''}
+                onChange={(e) => set('span_days', e.target.value ? Number(e.target.value) : null)}
+                className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-300 focus:outline-none focus:border-brand-accent transition"
               >
-                {TIME_PRESETS.map((p) => (
+                {SPAN_PRESETS.map((p) => (
                   <option key={p.value ?? 'none'} value={p.value ?? ''}>{p.label}</option>
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Estimated time */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Estimated time</label>
+            <select
+              value={form.duration_minutes ?? ''}
+              onChange={(e) => set('duration_minutes', e.target.value ? Number(e.target.value) : null)}
+              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-300 focus:outline-none focus:border-brand-accent transition"
+            >
+              {TIME_PRESETS.map((p) => (
+                <option key={p.value ?? 'none'} value={p.value ?? ''}>{p.label}</option>
+              ))}
+            </select>
           </div>
 
           {/* Assignee */}

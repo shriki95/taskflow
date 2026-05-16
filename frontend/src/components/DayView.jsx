@@ -17,8 +17,8 @@ function blockHeight(duration_minutes) {
 function getTaskSpan(task) {
   if (!task.due_date) return [];
   const due = new Date(task.due_date);
-  if (!task.duration_minutes || task.duration_minutes < 1440) return [due];
-  const days = Math.ceil(task.duration_minutes / 1440);
+  if (!task.span_days || task.span_days <= 1) return [due];
+  const days = task.span_days;
   return Array.from({ length: days }, (_, i) => addDays(due, -(days - 1 - i)));
 }
 

@@ -59,23 +59,26 @@ function FieldSelect({ value, options, onChange, renderOption, renderValue }) {
 }
 
 const TIME_PRESETS = [
-  { value: null,  label: '— no estimate' },
-  { value: 5,     label: '5 min' },
-  { value: 15,    label: '15 min' },
-  { value: 30,    label: '30 min' },
-  { value: 60,    label: '1 hour' },
-  { value: 90,    label: '1.5 hours' },
-  { value: 120,   label: '2 hours' },
-  { value: 180,   label: '3 hours' },
-  { value: 240,   label: '4 hours' },
-  { value: 360,   label: '6 hours' },
-  { value: 480,   label: '8 hours' },
-  { value: 1440,  label: '1 day' },
-  { value: 2880,  label: '2 days' },
-  { value: 4320,  label: '3 days' },
-  { value: 7200,  label: '5 days' },
-  { value: 10080, label: '1 week' },
-  { value: 20160, label: '2 weeks' },
+  { value: null, label: '— no estimate' },
+  { value: 5,    label: '5 min' },
+  { value: 15,   label: '15 min' },
+  { value: 30,   label: '30 min' },
+  { value: 60,   label: '1 hour' },
+  { value: 90,   label: '1.5 hours' },
+  { value: 120,  label: '2 hours' },
+  { value: 180,  label: '3 hours' },
+  { value: 240,  label: '4 hours' },
+  { value: 360,  label: '6 hours' },
+  { value: 480,  label: '8 hours' },
+];
+
+const SPAN_PRESETS = [
+  { value: null, label: '— single day' },
+  { value: 2,    label: '2 days' },
+  { value: 3,    label: '3 days' },
+  { value: 5,    label: '5 days' },
+  { value: 7,    label: '1 week' },
+  { value: 14,   label: '2 weeks' },
 ];
 
 function SubtaskItem({ subtask, projectId, taskId, onToggle, onDelete }) {
@@ -365,7 +368,7 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
             </div>
           )}
 
-          {/* Due date + estimated time */}
+          {/* Due date + span days */}
           <div className="flex items-center gap-3">
             <span className="text-xs text-slate-600 w-20 flex-shrink-0">Due date</span>
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -376,18 +379,30 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
                 className="bg-app-bg border border-app-border rounded-lg px-2.5 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition [color-scheme:dark]"
               />
               <select
-                value={task.duration_minutes ?? ''}
-                onChange={(e) => updateField({ duration_minutes: e.target.value ? Number(e.target.value) : null })}
+                value={task.span_days ?? ''}
+                onChange={(e) => updateField({ span_days: e.target.value ? Number(e.target.value) : null })}
                 className="bg-app-bg border border-app-border rounded-lg px-2 py-1.5 text-xs text-slate-400 focus:outline-none focus:border-brand-accent transition"
-                title="Estimated work time"
+                title="Calendar span"
               >
-                {TIME_PRESETS.map((p) => (
-                  <option key={p.value ?? 'none'} value={p.value ?? ''}>
-                    {p.label}
-                  </option>
+                {SPAN_PRESETS.map((p) => (
+                  <option key={p.value ?? 'none'} value={p.value ?? ''}>{p.label}</option>
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Estimated time */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-slate-600 w-20 flex-shrink-0">Est. time</span>
+            <select
+              value={task.duration_minutes ?? ''}
+              onChange={(e) => updateField({ duration_minutes: e.target.value ? Number(e.target.value) : null })}
+              className="bg-app-bg border border-app-border rounded-lg px-2 py-1.5 text-xs text-slate-400 focus:outline-none focus:border-brand-accent transition"
+            >
+              {TIME_PRESETS.map((p) => (
+                <option key={p.value ?? 'none'} value={p.value ?? ''}>{p.label}</option>
+              ))}
+            </select>
           </div>
         </div>
 
