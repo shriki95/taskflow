@@ -212,25 +212,25 @@ export default function ProjectPage() {
     <Layout>
       <div className="flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <div className="flex-shrink-0 px-6 py-4 border-b border-app-border flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/dashboard')} className="text-slate-500 hover:text-slate-300 transition">
+        <div className="flex-shrink-0 px-3 sm:px-6 py-3 sm:py-4 border-b border-app-border flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <button onClick={() => navigate('/dashboard')} className="text-slate-500 hover:text-slate-300 transition flex-shrink-0">
               <ArrowLeft size={18} />
             </button>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 min-w-0">
               <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: project?.color }} />
-              <h1 className="text-lg font-semibold text-slate-100">{project?.name}</h1>
+              <h1 className="text-base sm:text-lg font-semibold text-slate-100 truncate">{project?.name}</h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             {/* Main view toggle */}
-            <div className="flex bg-app-bg border border-app-border rounded-lg p-1">
+            <div className="flex bg-app-bg border border-app-border rounded-lg p-0.5 sm:p-1">
               {MAIN_VIEWS.map(({ id, icon, label }) => (
                 <button
                   key={id}
                   onClick={() => setView(id === 'calendar' && !isCalendarView ? 'calendar' : id)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm font-medium transition ${
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-md text-sm font-medium transition ${
                     (id === 'calendar' ? isCalendarView : view === id)
                       ? 'bg-brand-accent text-white'
                       : 'text-slate-400 hover:text-slate-200'
@@ -244,12 +244,12 @@ export default function ProjectPage() {
 
             {/* Calendar sub-toggle */}
             {isCalendarView && (
-              <div className="flex bg-app-bg border border-app-border rounded-lg p-1">
+              <div className="flex bg-app-bg border border-app-border rounded-lg p-0.5 sm:p-1">
                 {CALENDAR_SUBS.map(({ id, icon, label }) => (
                   <button
                     key={id}
                     onClick={() => setView(id)}
-                    className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium transition ${
+                    className={`flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-1.5 rounded-md text-xs font-medium transition ${
                       view === id ? 'bg-brand-accent/20 text-brand-accent' : 'text-slate-500 hover:text-slate-300'
                     }`}
                   >
@@ -260,8 +260,8 @@ export default function ProjectPage() {
               </div>
             )}
 
-            {/* Members */}
-            <div className="flex -space-x-2">
+            {/* Members — hidden on mobile */}
+            <div className="hidden sm:flex -space-x-2">
               {members.slice(0, 4).map((m) => (
                 <div
                   key={m.userId}
@@ -274,8 +274,8 @@ export default function ProjectPage() {
               ))}
             </div>
 
-            {/* Edit / Delete project */}
-            <div className="flex items-center gap-1 border-l border-app-border pl-3">
+            {/* Edit / Delete project — hidden on mobile */}
+            <div className="hidden sm:flex items-center gap-1 border-l border-app-border pl-2 sm:pl-3">
               <button
                 onClick={() => setShowEditProject(true)}
                 className="p-2 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-app-card transition"
@@ -294,17 +294,17 @@ export default function ProjectPage() {
 
             <button
               onClick={() => openCreateTask('todo')}
-              className="flex items-center gap-2 bg-brand-accent hover:bg-brand-accent/90 text-white font-semibold px-3.5 py-2 rounded-lg transition text-sm"
+              className="flex items-center gap-1.5 bg-brand-accent hover:bg-brand-accent/90 text-white font-semibold px-2.5 sm:px-3.5 py-2 rounded-lg transition text-sm"
             >
               <Plus size={16} />
-              Add task
+              <span className="hidden sm:inline">Add task</span>
             </button>
           </div>
         </div>
 
         {/* Content */}
         <div className="flex flex-1 overflow-hidden">
-          <div className="flex-1 overflow-auto p-6">
+          <div className="flex-1 overflow-auto p-3 sm:p-6">
             {view === 'board' && (
               <KanbanBoard
                 tasks={tasks}

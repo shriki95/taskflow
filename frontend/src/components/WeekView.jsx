@@ -167,7 +167,8 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto flex flex-col gap-2">
+      <div className="flex-1 overflow-auto">
+       <div className="min-w-[480px] flex flex-col gap-2 h-full">
         {/* Day headers */}
         <div className="grid grid-cols-7 divide-x divide-app-border border border-app-border rounded-xl overflow-hidden flex-shrink-0 bg-app-card/50">
           {days.map((day, i) => {
@@ -280,6 +281,7 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
             );
           })}
         </div>
+       </div>
       </div>
     </div>
   );

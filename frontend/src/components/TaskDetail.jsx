@@ -107,6 +107,14 @@ function SubtaskItem({ subtask, onToggle, onDelete }) {
 }
 
 export default function TaskDetail({ task, projectId, members, groups = [], onClose, onUpdate, onDelete }) {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640);
+
+  useEffect(() => {
+    const fn = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', fn);
+    return () => window.removeEventListener('resize', fn);
+  }, []);
+
   const [title, setTitle]           = useState(task.title);
   const [editingTitle, setEditingTitle] = useState(false);
   const [description, setDescription]  = useState(task.description || '');
@@ -208,11 +216,15 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
 
   return (
     <motion.div
-      initial={{ x: '100%', opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: '100%', opacity: 0 }}
+      initial={isMobile ? { y: '100%' } : { x: '100%', opacity: 0 }}
+      animate={isMobile ? { y: 0 } : { x: 0, opacity: 1 }}
+      exit={isMobile ? { y: '100%' } : { x: '100%', opacity: 0 }}
       transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-      className="w-[420px] flex-shrink-0 bg-app-sidebar border-l border-app-border flex flex-col overflow-hidden"
+      className={
+        isMobile
+          ? 'fixed inset-0 z-40 bg-app-sidebar flex flex-col overflow-hidden'
+          : 'w-[420px] flex-shrink-0 bg-app-sidebar border-l border-app-border flex flex-col overflow-hidden'
+      }
     >
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-app-border">

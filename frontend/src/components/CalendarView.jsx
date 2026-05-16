@@ -148,7 +148,8 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
     }
   }, [onDueDateChange]);
 
-  const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const WEEKDAYS       = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const WEEKDAYS_SHORT = ['S',   'M',   'T',   'W',   'T',   'F',   'S'  ];
 
   return (
     <div className="flex flex-col h-full gap-4">
@@ -181,10 +182,14 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
 
       {/* Grid */}
       <div className="flex-1 overflow-auto">
+       <div className="min-w-[320px]">
         {/* Day-of-week headers */}
         <div className="grid grid-cols-7 mb-1">
-          {WEEKDAYS.map((d) => (
-            <div key={d} className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wider py-1">{d}</div>
+          {WEEKDAYS.map((d, i) => (
+            <div key={d} className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wider py-1">
+              <span className="hidden sm:inline">{d}</span>
+              <span className="sm:hidden">{WEEKDAYS_SHORT[i]}</span>
+            </div>
           ))}
         </div>
 
@@ -299,6 +304,7 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
             );
           })}
         </div>
+       </div>
       </div>
 
       {/* Overflow popover */}
