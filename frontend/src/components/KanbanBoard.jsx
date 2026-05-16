@@ -2,8 +2,7 @@ import { useState, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
-  TouchSensor,
+  MouseSensor,
   useSensor,
   useSensors,
   closestCenter,
@@ -318,8 +317,7 @@ export default function KanbanBoard({
   const [activeTask, setActiveTask] = useState(null);
 
   const sensors = useSensors(
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } })
   );
 
   const activeTasks = tasks.filter((t) => t.status !== 'done');
