@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, isSameDay, isSameMonth, isToday,
@@ -65,7 +65,7 @@ function TaskChip({ task, onClick, onStatusChange, compact = false }) {
       <span className={`rounded-full flex-shrink-0 ${PRIORITY_BAR[task.priority] || 'bg-slate-500'} ${compact ? 'w-1 h-1' : 'w-1.5 h-1.5'}`} />
       <span
         dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-        className={`flex-1 leading-none truncate min-w-0 hidden sm:inline ${isDone ? 'line-through text-slate-500' : 'text-slate-300'}`}
+        className={`flex-1 leading-none truncate min-w-0 ${isDone ? 'line-through text-slate-500' : 'text-slate-300'}`}
       >
         {task.title}
       </span>
@@ -99,7 +99,7 @@ function SpanChip({ task, onTaskClick, onStatusChange, startsThisWeek, endsThisW
       <span className={`rounded-full flex-shrink-0 ${PRIORITY_BAR[task.priority] || 'bg-slate-500'} ${compact ? 'w-1 h-1' : 'w-1.5 h-1.5'}`} />
       <span
         dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-        className={`flex-1 leading-none truncate min-w-0 hidden sm:inline ${isDone ? 'line-through text-slate-500' : 'text-slate-300'}`}
+        className={`flex-1 leading-none truncate min-w-0 ${isDone ? 'line-through text-slate-500' : 'text-slate-300'}`}
       >
         {task.title}
       </span>
@@ -112,7 +112,21 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
   const [current, setCurrent]   = useState(new Date());
   const [popover, setPopover]   = useState(null);
   const [dragOver, setDragOver] = useState(null);
+  const [lpDay, setLpDay]       = useState(null);
   const hideTimer = useRef(null);
+  const lpRef     = useRef({ timer: null, fired: false });
+
+  const startLp = useCallback((day) => {
+    lpRef.current.fired = false;
+    lpRef.current.timer = setTimeout(() => {
+      lpRef.current.fired = true;
+      setLpDay(day);
+    }, 500);
+  }, []);
+
+  const cancelLp = useCallback(() => {
+    clearTimeout(lpRef.current.timer);
+  }, []);
 
   const monthStart = startOfMonth(current);
   const monthEnd   = endOfMonth(current);
@@ -275,7 +289,10 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                     <div
                       key={`c-${isoDay}`}
                       style={{ gridColumn: col + 1, gridRow: CHIP_ROW }}
-                      onClick={() => onDayClick && onDayClick(day)}
+                      onClick={() => { if (lpRef.current.fired) return; onDayClick && onDayClick(day); }}
+                      onTouchStart={() => startLp(day)}
+                      onTouchEnd={cancelLp}
+                      onTouchMove={cancelLp}
                       onDragOver={(e) => { e.preventDefault(); setDragOver(isoDay); }}
                       onDragLeave={() => setDragOver(null)}
                       onDrop={(e) => handleDrop(e, day)}
@@ -306,6 +323,34 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
         </div>
        </div>
       </div>
+
+      {/* Long-press bottom sheet (mobile) */}
+      {lpDay && (() => {
+        const allForDay = singleTasksForDay(lpDay);
+        return (
+          <div className="fixed inset-0 z-50 flex items-end" onClick={() => setLpDay(null)}>
+            <div
+              className="w-full bg-app-card border-t border-app-border rounded-t-2xl p-4 max-h-[70vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-10 h-1 bg-slate-600 rounded-full mx-auto mb-4" />
+              <p className="text-sm font-semibold text-slate-100 mb-3">
+                {format(lpDay, 'EEE, MMM d')} · {allForDay.length} {allForDay.length === 1 ? 'task' : 'tasks'}
+              </p>
+              <div className="flex flex-col gap-1">
+                {allForDay.map((task) => (
+                  <TaskChip
+                    key={`lp-${task.taskId}`}
+                    task={task}
+                    onClick={(t) => { setLpDay(null); onTaskClick(t); }}
+                    onStatusChange={onStatusChange}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Overflow popover */}
       {popover && (() => {
