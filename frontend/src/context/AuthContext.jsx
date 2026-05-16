@@ -62,6 +62,14 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (email, password) => {
+    // Clear any stale session before attempting login — prevents refresh-token hang
+    try {
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise((r) => setTimeout(r, 2000)),
+      ]);
+    } catch { /* ignore */ }
+
     let result;
     try {
       result = await withTimeout(
@@ -69,7 +77,7 @@ export function AuthProvider({ children }) {
         12000
       );
     } catch {
-      throw { response: { data: { error: 'Connection timed out. Check your network or try again in a moment.' } } };
+      throw { response: { data: { error: 'Connection timed out. Check your network or try again.' } } };
     }
     const { data, error } = result;
     if (error) throw { response: { data: { error: error.message } } };
