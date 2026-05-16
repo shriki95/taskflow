@@ -16,10 +16,9 @@ const PRIORITY_BAR = {
 
 function getTaskSpan(task) {
   if (!task.due_date) return [];
-  const due = new Date(task.due_date);
-  if (!task.span_days || task.span_days <= 1) return [due];
-  const days = task.span_days;
-  return Array.from({ length: days }, (_, i) => addDays(due, -(days - 1 - i)));
+  const start = new Date(task.due_date);
+  if (!task.span_days || task.span_days <= 1) return [start];
+  return Array.from({ length: task.span_days }, (_, i) => addDays(start, i));
 }
 
 function TaskChip({ task, members, onClick, onStatusChange, isFirst, isMultiDay }) {
@@ -30,12 +29,12 @@ function TaskChip({ task, members, onClick, onStatusChange, isFirst, isMultiDay 
     return (
       <div
         onClick={(e) => { e.stopPropagation(); onClick(task); }}
-        className={`flex items-center gap-1 px-1 py-0.5 rounded text-xs cursor-pointer
-          hover:opacity-90 transition mb-0.5 truncate opacity-70
-          bg-app-sidebar border border-app-border border-l-2`}
+        className="flex items-start gap-1 px-1 py-0.5 rounded text-xs cursor-pointer
+          hover:opacity-90 transition mb-0.5 opacity-70
+          bg-app-sidebar border border-app-border border-l-2"
         style={{ borderLeftColor: task.priority === 'high' ? '#ef4444' : task.priority === 'low' ? '#10b981' : '#f59e0b' }}
       >
-        <span className="truncate flex-1 text-slate-400" dir={isRTL(task.title) ? 'rtl' : 'ltr'}>
+        <span className="text-slate-400 leading-snug break-words min-w-0 flex-1" dir={isRTL(task.title) ? 'rtl' : 'ltr'}>
           {task.title}
         </span>
       </div>
@@ -45,36 +44,28 @@ function TaskChip({ task, members, onClick, onStatusChange, isFirst, isMultiDay 
   return (
     <div
       onClick={(e) => { e.stopPropagation(); onClick(task); }}
-      className={`flex items-center gap-1 px-1 py-0.5 rounded text-xs cursor-pointer
-        hover:opacity-80 transition mb-0.5 truncate
+      className={`flex items-start gap-1 px-1 py-0.5 rounded text-xs cursor-pointer
+        hover:opacity-80 transition mb-0.5
         ${isDone ? 'opacity-50' : ''}
         bg-app-sidebar border border-app-border`}
     >
       <button
         onClick={(e) => { e.stopPropagation(); if (onStatusChange) onStatusChange(task.taskId, isDone ? 'todo' : 'done'); }}
-        className="flex-shrink-0 focus:outline-none"
+        className="flex-shrink-0 focus:outline-none mt-0.5"
       >
         {isDone
           ? <CheckCircle2 size={10} className="text-emerald-400" />
           : <Circle size={10} className="text-slate-600 hover:text-slate-400 transition-colors" />
         }
       </button>
-      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PRIORITY_BAR[task.priority] || 'bg-slate-500'}`} />
+      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1 ${PRIORITY_BAR[task.priority] || 'bg-slate-500'}`} />
       <span
         dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-        className={`truncate flex-1 ${isDone ? 'line-through text-slate-500' : 'text-slate-300'}`}
+        className={`flex-1 leading-snug break-words min-w-0 ${isDone ? 'line-through text-slate-500' : 'text-slate-300'}`}
       >
         {task.title}
       </span>
-      {isMultiDay && <span className="text-slate-600 text-[9px] flex-shrink-0">→</span>}
-      {assignee && (
-        <span
-          className="w-3.5 h-3.5 rounded-full flex-shrink-0 flex items-center justify-center text-[8px] font-bold text-white"
-          style={{ backgroundColor: assignee.avatar_color }}
-        >
-          {assignee.name[0]?.toUpperCase()}
-        </span>
-      )}
+      {isMultiDay && <span className="text-slate-600 text-[9px] flex-shrink-0 mt-0.5">→</span>}
     </div>
   );
 }

@@ -17,10 +17,9 @@ const PRIORITY_SPAN   = {
 
 function getTaskSpan(task) {
   if (!task.due_date) return [];
-  const due = new Date(task.due_date);
-  if (!task.span_days || task.span_days <= 1) return [due];
-  const days = task.span_days;
-  return Array.from({ length: days }, (_, i) => addDays(due, -(days - 1 - i)));
+  const start = new Date(task.due_date);
+  if (!task.span_days || task.span_days <= 1) return [start];
+  return Array.from({ length: task.span_days }, (_, i) => addDays(start, i));
 }
 
 function blockHeight(duration_minutes) {
@@ -60,18 +59,18 @@ function SingleDayBlock({ task, members, onClick, onStatusChange }) {
   return (
     <div
       onClick={() => onClick(task)}
-      style={{ height: `${height}px` }}
+      style={{ minHeight: `${height}px` }}
       className={`flex flex-col gap-0.5 px-1.5 py-1 rounded-md text-xs cursor-pointer
-        hover:opacity-80 transition mb-1 overflow-hidden border-l-2
+        hover:opacity-80 transition mb-1 border-l-2
         ${PRIORITY_BORDER[task.priority] || 'border-l-slate-500'}
         ${PRIORITY_BG[task.priority] || ''}
         bg-app-sidebar border border-app-border
         ${isDone ? 'opacity-50' : ''}`}
     >
-      <div className="flex items-center gap-1 min-w-0">
+      <div className="flex items-start gap-1 min-w-0">
         <button
           onClick={(e) => { e.stopPropagation(); onStatusChange(task.taskId, isDone ? 'todo' : 'done'); }}
-          className="flex-shrink-0 focus:outline-none"
+          className="flex-shrink-0 focus:outline-none mt-0.5"
         >
           {isDone
             ? <CheckCircle2 size={10} className="text-emerald-400" />
@@ -79,7 +78,7 @@ function SingleDayBlock({ task, members, onClick, onStatusChange }) {
         </button>
         <span
           dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-          className={`truncate flex-1 font-medium ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
+          className={`flex-1 font-medium leading-snug break-words min-w-0 ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
         >
           {task.title}
         </span>
@@ -178,7 +177,7 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
           {numSpanRows > 0 && (
             <div
               className="grid grid-cols-7 border-t border-app-border bg-app-bg/40 p-1"
-              style={{ gridTemplateRows: `repeat(${numSpanRows}, 28px)` }}
+              style={{ gridTemplateRows: `repeat(${numSpanRows}, auto)` }}
             >
               {multiDayLayout.map(({ task, startCol, endCol, row, startsThisWeek, endsThisWeek }) => {
                 const isDone  = task.status === 'done';
@@ -189,27 +188,27 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
                     key={task.taskId}
                     onClick={() => onTaskClick(task)}
                     style={{ gridColumn: `${startCol + 1} / ${endCol + 2}`, gridRow: row + 1 }}
-                    className={`flex items-center gap-1.5 px-2 mx-0.5 my-0.5 rounded-md text-xs
-                      border cursor-pointer hover:opacity-80 transition overflow-hidden
+                    className={`flex items-start gap-1.5 px-2 py-1.5 mx-0.5 my-0.5 rounded-md text-xs
+                      border cursor-pointer hover:opacity-80 transition min-h-[28px]
                       ${spanCls} ${isDone ? 'opacity-40' : ''}`}
                   >
                     <button
                       onClick={(e) => { e.stopPropagation(); onStatusChange(task.taskId, isDone ? 'todo' : 'done'); }}
-                      className="flex-shrink-0 focus:outline-none"
+                      className="flex-shrink-0 focus:outline-none mt-0.5"
                     >
                       {isDone ? <CheckCircle2 size={10} /> : <Circle size={10} />}
                     </button>
-                    {!startsThisWeek && <span className="opacity-40 text-[8px] flex-shrink-0">◀</span>}
+                    {!startsThisWeek && <span className="opacity-40 text-[8px] flex-shrink-0 mt-0.5">◀</span>}
                     <span
                       dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-                      className={`truncate flex-1 font-medium ${isDone ? 'line-through' : ''}`}
+                      className={`flex-1 font-medium leading-snug break-words min-w-0 ${isDone ? 'line-through' : ''}`}
                     >
                       {task.title}
                     </span>
                     {durLabel && startsThisWeek && (
-                      <span className="opacity-50 text-[9px] flex-shrink-0 hidden sm:inline">{durLabel}</span>
+                      <span className="opacity-50 text-[9px] flex-shrink-0 mt-0.5 hidden sm:inline">{durLabel}</span>
                     )}
-                    {!endsThisWeek && <span className="opacity-40 text-[8px] flex-shrink-0">▶</span>}
+                    {!endsThisWeek && <span className="opacity-40 text-[8px] flex-shrink-0 mt-0.5">▶</span>}
                   </div>
                 );
               })}

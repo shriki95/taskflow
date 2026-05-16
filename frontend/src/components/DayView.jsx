@@ -16,10 +16,9 @@ function blockHeight(duration_minutes) {
 
 function getTaskSpan(task) {
   if (!task.due_date) return [];
-  const due = new Date(task.due_date);
-  if (!task.span_days || task.span_days <= 1) return [due];
-  const days = task.span_days;
-  return Array.from({ length: days }, (_, i) => addDays(due, -(days - 1 - i)));
+  const start = new Date(task.due_date);
+  if (!task.span_days || task.span_days <= 1) return [start];
+  return Array.from({ length: task.span_days }, (_, i) => addDays(start, i));
 }
 
 function DayTaskBlock({ task, members, onClick, onStatusChange }) {
@@ -33,9 +32,9 @@ function DayTaskBlock({ task, members, onClick, onStatusChange }) {
   return (
     <div
       onClick={onClick}
-      style={{ height: `${height}px` }}
+      style={{ minHeight: `${height}px` }}
       className={`flex flex-col gap-1 px-4 py-3 cursor-pointer rounded-xl border border-app-border
-        border-l-4 ${pb} ${bg} hover:bg-app-card/70 transition overflow-hidden
+        border-l-4 ${pb} ${bg} hover:bg-app-card/70 transition
         ${isDone ? 'opacity-60' : ''}`}
     >
       {/* Top row */}
@@ -51,16 +50,16 @@ function DayTaskBlock({ task, members, onClick, onStatusChange }) {
         </button>
         <span
           dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-          className={`text-sm font-semibold leading-snug flex-1 ${isDone ? 'line-through text-slate-500' : 'text-slate-100'}`}
+          className={`text-sm font-semibold leading-snug break-words min-w-0 flex-1 ${isDone ? 'line-through text-slate-500' : 'text-slate-100'}`}
         >
           {task.title}
         </span>
         <Flag size={12} className={`flex-shrink-0 mt-0.5 ${PRIORITY_COLOR[task.priority] || 'text-slate-600'}`} />
       </div>
 
-      {/* Duration + assignee (shown when block is tall enough) */}
-      {height >= 96 && (
-        <div className="flex items-center gap-3 pl-7 mt-auto">
+      {/* Duration + assignee */}
+      {(durLabel || assignee) && (
+        <div className="flex items-center gap-3 pl-7 mt-auto pt-1">
           {durLabel && (
             <span className="flex items-center gap-1 text-xs text-slate-500">
               <Clock size={11} />
