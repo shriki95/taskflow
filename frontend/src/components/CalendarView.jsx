@@ -41,28 +41,30 @@ function computeWeekSpanLayout(multiDaySpans, weekDays) {
   return positioned;
 }
 
-function TaskChip({ task, onClick, onStatusChange }) {
+function TaskChip({ task, onClick, onStatusChange, compact = false }) {
   const isDone = task.status === 'done';
+  const iconSize = compact ? 8 : 10;
   return (
     <div
       onClick={(e) => { e.stopPropagation(); onClick(task); }}
-      className={`flex items-start gap-1 px-1 py-0.5 rounded text-xs cursor-pointer
-        hover:opacity-80 transition mb-0.5
+      className={`flex items-center gap-0.5 px-1 rounded cursor-pointer
+        hover:opacity-80 transition
+        ${compact ? 'py-px mb-px text-[9px]' : 'py-0.5 mb-0.5 text-xs'}
         ${isDone ? 'opacity-50' : ''}
         bg-app-sidebar border border-app-border`}
     >
       <button
         onClick={(e) => { e.stopPropagation(); if (onStatusChange) onStatusChange(task.taskId, isDone ? 'todo' : 'done'); }}
-        className="flex-shrink-0 focus:outline-none mt-0.5"
+        className="flex-shrink-0 focus:outline-none"
       >
         {isDone
-          ? <CheckCircle2 size={10} className="text-emerald-400" />
-          : <Circle size={10} className="text-slate-600 hover:text-slate-400 transition-colors" />}
+          ? <CheckCircle2 size={iconSize} className="text-emerald-400" />
+          : <Circle size={iconSize} className="text-slate-600 hover:text-slate-400 transition-colors" />}
       </button>
-      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1 ${PRIORITY_BAR[task.priority] || 'bg-slate-500'}`} />
+      <span className={`rounded-full flex-shrink-0 ${PRIORITY_BAR[task.priority] || 'bg-slate-500'} ${compact ? 'w-1 h-1' : 'w-1.5 h-1.5'}`} />
       <span
         dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-        className={`flex-1 leading-snug break-words min-w-0 ${isDone ? 'line-through text-slate-500' : 'text-slate-300'}`}
+        className={`flex-1 leading-none truncate min-w-0 ${isDone ? 'line-through text-slate-500' : 'text-slate-300'}`}
       >
         {task.title}
       </span>
@@ -211,8 +213,11 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                   const inMonth     = isSameMonth(day, current);
                   const todayFlag   = isToday(day);
                   const isoDay      = day.toISOString();
-                  const visible     = singleTasks.slice(0, 3);
-                  const overflow    = singleTasks.length - 3;
+                  const count       = singleTasks.length;
+                  const compact     = count >= 4;
+                  const maxVisible  = count <= 3 ? 3 : count <= 5 ? 5 : 4;
+                  const visible     = singleTasks.slice(0, maxVisible);
+                  const overflow    = singleTasks.length - maxVisible;
                   return (
                     <div
                       key={`c-${isoDay}`}
@@ -225,14 +230,14 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                         ${todayFlag ? '!bg-brand-accent/5' : 'hover:bg-app-card/40'}`}
                     >
                       {visible.map((task) => (
-                        <TaskChip key={`${task.taskId}-${isoDay}`} task={task} onClick={onTaskClick} onStatusChange={onStatusChange} />
+                        <TaskChip key={`${task.taskId}-${isoDay}`} task={task} onClick={onTaskClick} onStatusChange={onStatusChange} compact={compact} />
                       ))}
                       {overflow > 0 && (
                         <button
                           onClick={(e) => e.stopPropagation()}
                           onMouseEnter={(e) => showPopover(e, isoDay)}
                           onMouseLeave={startHide}
-                          className="text-xs text-slate-500 hover:text-slate-300 pl-1 transition"
+                          className="text-[10px] text-slate-500 hover:text-slate-300 pl-1 transition leading-none"
                         >
                           +{overflow} more
                         </button>
