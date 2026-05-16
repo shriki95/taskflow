@@ -46,7 +46,7 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange }) {
           <IconComponent />
         </button>
       </td>
-      <td className="py-3 pr-3 min-w-0">
+      <td className="py-3 pr-3 w-full min-w-0">
         <span
           dir={isRTL(task.title) ? 'rtl' : 'ltr'}
           className={`text-sm font-medium ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
@@ -250,7 +250,7 @@ export default function ListView({
 
   return (
     <div className="bg-app-card -mx-3 sm:mx-0 sm:border sm:border-app-border sm:rounded-xl overflow-hidden">
-      <table className="w-full table-fixed">
+      <table className="w-full">
         <thead>
           <tr className="border-b border-app-border">
             <th className="py-3 pl-4 pr-2 w-8" />
