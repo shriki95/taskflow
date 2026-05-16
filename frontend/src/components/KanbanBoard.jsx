@@ -45,7 +45,7 @@ function SortableCard({ task, members, onClick, onStatusChange, onDueDateChange 
   );
 }
 
-function Column({ col, tasks, members, colorIndex, onTaskClick, onAddTask, onStatusChange, onDueDateChange, onRename, onDelete, deletable }) {
+function Column({ col, tasks, members, colorIndex, onTaskClick, onAddTask, onStatusChange, onDueDateChange, onRename, onDelete, editable, deletable }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id });
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(col.name);
@@ -53,6 +53,7 @@ function Column({ col, tasks, members, colorIndex, onTaskClick, onAddTask, onSta
   const color = colorIndex < 0 ? '#475569' : COL_COLORS[colorIndex % COL_COLORS.length];
 
   const startEdit = () => {
+    if (!editable) return;
     setEditing(true);
     setDraftName(col.name);
     setTimeout(() => inputRef.current?.focus(), 10);
@@ -85,7 +86,7 @@ function Column({ col, tasks, members, colorIndex, onTaskClick, onAddTask, onSta
               }}
               className="bg-app-bg border border-brand-accent rounded px-2 py-0.5 text-xs font-bold text-slate-200 focus:outline-none flex-1 min-w-0 uppercase tracking-wider"
             />
-          ) : (
+          ) : editable ? (
             <button
               onClick={startEdit}
               className="text-xs font-bold text-slate-400 uppercase tracking-wider truncate hover:text-slate-200 transition text-left"
@@ -93,6 +94,10 @@ function Column({ col, tasks, members, colorIndex, onTaskClick, onAddTask, onSta
             >
               {col.name}
             </button>
+          ) : (
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider truncate italic">
+              {col.name}
+            </span>
           )}
           <span className="text-xs text-slate-600 bg-app-card border border-app-border rounded-full px-1.5 py-0.5 min-w-[20px] text-center flex-shrink-0">
             {tasks.length}
@@ -224,58 +229,73 @@ function CompletedSection({ tasks, members, onTaskClick, onRestore }) {
   }).length;
 
   return (
-    <div className="mt-8 border-t border-app-border pt-5">
+    <div className="mt-16">
+      {/* Divider with label */}
+      <div className="flex items-center gap-3 mb-3">
+        <div className="flex-1 h-px bg-app-border" />
+        <span className="text-xs text-slate-700 uppercase tracking-widest font-semibold">History</span>
+        <div className="flex-1 h-px bg-app-border" />
+      </div>
+
+      {/* Toggle tab */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2.5 mb-1 group w-full text-left"
+        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition group ${
+          open
+            ? 'bg-app-card border-app-border'
+            : 'bg-app-sidebar/30 border-app-border hover:border-slate-600 hover:bg-app-sidebar/60'
+        }`}
       >
         {open
-          ? <ChevronDown size={14} className="text-slate-500 flex-shrink-0" />
-          : <ChevronRight size={14} className="text-slate-500 flex-shrink-0" />
+          ? <ChevronDown size={14} className="text-emerald-500 flex-shrink-0" />
+          : <ChevronRight size={14} className="text-slate-600 group-hover:text-slate-400 flex-shrink-0 transition" />
         }
-        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0" />
+        <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
         <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-          Completed
+          Completed tasks
         </span>
-        <span className="text-xs text-slate-600 bg-app-card border border-app-border rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+        <span className={`text-xs rounded-full px-2 py-0.5 font-semibold border ${
+          tasks.length > 0
+            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+            : 'bg-app-bg border-app-border text-slate-600'
+        }`}>
           {tasks.length}
         </span>
-        <div className="flex items-center gap-2 ml-2 text-xs text-slate-600">
-          <span className="text-emerald-600 font-semibold">{thisWeekCount} this week</span>
-          <span>·</span>
-          <span>{thisMonthCount} this month</span>
-          <span>·</span>
-          <span>{tasks.length} total</span>
-        </div>
+        {tasks.length > 0 && (
+          <div className="flex items-center gap-2 ml-auto text-xs text-slate-600">
+            <span className="text-emerald-600 font-medium">{thisWeekCount} this week</span>
+            <span>·</span>
+            <span>{thisMonthCount} this month</span>
+            <span>·</span>
+            <span>{tasks.length} total</span>
+          </div>
+        )}
+        {tasks.length === 0 && (
+          <span className="ml-auto text-xs text-slate-700 italic">No completed tasks yet</span>
+        )}
       </button>
 
-      {open && (
-        tasks.length === 0 ? (
-          <div className="mt-4 flex items-center justify-center h-16 text-slate-600 text-sm">
-            No completed tasks yet. Mark a task as done to see it here.
-          </div>
-        ) : (
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-            {tasks.map((task) => (
-              <div key={task.taskId} className="relative group/done">
-                <TaskCard
-                  task={task}
-                  members={members}
-                  onClick={() => onTaskClick(task)}
-                  onStatusChange={onRestore}
-                />
-                <button
-                  onClick={(e) => { e.stopPropagation(); onRestore(task.taskId, 'todo'); }}
-                  className="absolute top-2 right-2 opacity-0 group-hover/done:opacity-100 flex items-center gap-1 text-xs bg-app-bg hover:bg-app-card text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded-full transition border border-app-border shadow-sm"
-                  title="Restore task"
-                >
-                  <RotateCcw size={10} />
-                  Restore
-                </button>
-              </div>
-            ))}
-          </div>
-        )
+      {open && tasks.length > 0 && (
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+          {tasks.map((task) => (
+            <div key={task.taskId} className="relative group/done">
+              <TaskCard
+                task={task}
+                members={members}
+                onClick={() => onTaskClick(task)}
+                onStatusChange={onRestore}
+              />
+              <button
+                onClick={(e) => { e.stopPropagation(); onRestore(task.taskId, 'todo'); }}
+                className="absolute top-2 right-2 opacity-0 group-hover/done:opacity-100 flex items-center gap-1 text-xs bg-app-bg hover:bg-app-card text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded-full transition border border-app-border shadow-sm"
+                title="Restore task"
+              >
+                <RotateCcw size={10} />
+                Restore
+              </button>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -366,6 +386,7 @@ export default function KanbanBoard({
               onDueDateChange={onDueDateChange}
               onRename={() => {}}
               onDelete={() => {}}
+              editable={false}
               deletable={false}
             />
           )}
@@ -383,6 +404,7 @@ export default function KanbanBoard({
               onDueDateChange={onDueDateChange}
               onRename={onGroupUpdate}
               onDelete={onGroupDelete}
+              editable
               deletable
             />
           ))}
