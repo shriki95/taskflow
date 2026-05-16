@@ -220,7 +220,6 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
                 style={{ gridColumn: col + 1, gridRow: DAY_ROW }}
                 className={`flex flex-col p-2 transition-colors
                   ${col > 0 ? 'border-l border-app-border' : ''}
-                  ${numSpanRows > 0 ? 'border-t border-app-border' : ''}
                   ${todayFlag ? 'bg-brand-accent/5' : 'bg-app-card/40'}`}
               >
                 {singleTasks.length === 0 ? (

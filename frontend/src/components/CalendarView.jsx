@@ -159,6 +159,7 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                       onClick={() => onDayClick && onDayClick(day)}
                       className={`flex items-center justify-end px-1.5 pt-1 pb-0 cursor-pointer bg-app-bg
                         ${col > 0 ? 'border-l border-app-border' : ''}
+                        border-b border-app-border
                         ${inMonth ? '' : 'opacity-30'}
                         ${todayFlag ? 'bg-brand-primary/40' : 'hover:bg-app-card/60'}`}
                     >
@@ -218,7 +219,6 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                       onClick={() => onDayClick && onDayClick(day)}
                       className={`p-1 cursor-pointer bg-app-bg
                         ${col > 0 ? 'border-l border-app-border' : ''}
-                        border-t border-app-border
                         ${inMonth ? '' : 'opacity-30'}
                         ${todayFlag ? 'bg-brand-primary/40' : 'hover:bg-app-card/60'}`}
                     >
