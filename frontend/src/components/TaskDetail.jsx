@@ -4,8 +4,15 @@ import { format, addDays, differenceInDays } from 'date-fns';
 import {
   X, Trash2, CheckSquare, Square, Send, ChevronDown, Flag, Calendar,
   User, AlignLeft, Plus, Check, Layers, Clock, CheckCircle2, Circle,
-  RotateCcw, AlertCircle,
+  RotateCcw, AlertCircle, GripVertical,
 } from 'lucide-react';
+import {
+  DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { tasksApi, subtasksApi, commentsApi } from '../api/supabase';
 import Avatar from './Avatar';
 import { isRTL, formatDuration } from '../utils/text';
@@ -85,23 +92,76 @@ function FieldRow({ icon, label, children }) {
   );
 }
 
-function SubtaskItem({ subtask, onToggle, onDelete }) {
+function SubtaskItem({ subtask, onToggle, onDelete, onEdit, dragHandleProps }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft]     = useState(subtask.title);
+
+  const commit = () => {
+    setEditing(false);
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== subtask.title) onEdit(subtask.subtaskId, trimmed);
+    else setDraft(subtask.title);
+  };
+
   return (
-    <div className="flex items-center gap-2.5 group py-1.5 px-2 rounded-lg hover:bg-app-card/60 transition">
+    <div className="flex items-center gap-1.5 group py-1.5 px-1 rounded-lg hover:bg-app-card/60 transition">
+      <button
+        {...dragHandleProps}
+        className="flex-shrink-0 text-slate-700 hover:text-slate-400 cursor-grab active:cursor-grabbing touch-none p-0.5"
+      >
+        <GripVertical size={13} />
+      </button>
       <button onClick={() => onToggle(subtask)} className="flex-shrink-0 transition">
         {subtask.completed
           ? <CheckSquare size={15} className="text-brand-accent" />
           : <Square size={15} className="text-slate-600 hover:text-slate-400" />}
       </button>
-      <span dir={isRTL(subtask.title) ? 'rtl' : 'ltr'} className={`text-sm flex-1 ${subtask.completed ? 'line-through text-slate-600' : 'text-slate-300'}`}>
-        {subtask.title}
-      </span>
+      {editing ? (
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commit();
+            if (e.key === 'Escape') { setEditing(false); setDraft(subtask.title); }
+          }}
+          className="flex-1 bg-app-bg border border-brand-accent rounded px-2 py-0.5 text-sm text-slate-200 focus:outline-none"
+        />
+      ) : (
+        <span
+          dir={isRTL(subtask.title) ? 'rtl' : 'ltr'}
+          onClick={() => setEditing(true)}
+          className={`text-sm flex-1 cursor-text select-none ${subtask.completed ? 'line-through text-slate-600' : 'text-slate-300 hover:text-slate-100'}`}
+        >
+          {subtask.title}
+        </span>
+      )}
       <button
         onClick={() => onDelete(subtask.subtaskId)}
-        className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition"
+        className="opacity-0 group-hover:opacity-100 flex-shrink-0 text-slate-600 hover:text-red-400 transition p-0.5"
       >
-        <X size={12} />
+        <X size={13} />
       </button>
+    </div>
+  );
+}
+
+function SortableSubtask({ subtask, onToggle, onDelete, onEdit }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: subtask.subtaskId });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+    >
+      <SubtaskItem
+        subtask={subtask}
+        onToggle={onToggle}
+        onDelete={onDelete}
+        onEdit={onEdit}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
     </div>
   );
 }
@@ -175,17 +235,39 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
     if (description !== (task.description || '')) updateField({ description });
   };
 
+  const subtaskSensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
+
   const handleAddSubtask = async (e) => {
     e.preventDefault();
     if (!newSubtask.trim()) return;
     setAddingSubtask(true);
     try {
-      const { data } = await subtasksApi.create(projectId, task.taskId, { title: newSubtask.trim() });
+      const { data } = await subtasksApi.create(projectId, task.taskId, {
+        title: newSubtask.trim(),
+        position: subtasks.length,
+      });
       setSubtasks((prev) => [...prev, data]);
       setNewSubtask('');
     } finally {
       setAddingSubtask(false);
     }
+  };
+
+  const handleEditSubtask = async (subtaskId, title) => {
+    setSubtasks((prev) => prev.map((s) => s.subtaskId === subtaskId ? { ...s, title } : s));
+    await subtasksApi.update(projectId, task.taskId, subtaskId, { title });
+  };
+
+  const handleSubtaskDragEnd = async ({ active, over }) => {
+    if (!over || active.id === over.id) return;
+    const oldIdx = subtasks.findIndex((s) => s.subtaskId === active.id);
+    const newIdx = subtasks.findIndex((s) => s.subtaskId === over.id);
+    const reordered = arrayMove(subtasks, oldIdx, newIdx);
+    setSubtasks(reordered);
+    await subtasksApi.reorder(projectId, task.taskId, reordered.map((s) => s.subtaskId));
   };
 
   const handleToggleSubtask = async (subtask) => {
@@ -483,11 +565,21 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
                   style={{ width: `${(completedSubtasks / subtasks.length) * 100}%` }}
                 />
               </div>
-              <div className="mb-2 -mx-2">
-                {subtasks.map((s) => (
-                  <SubtaskItem key={s.subtaskId} subtask={s} onToggle={handleToggleSubtask} onDelete={handleDeleteSubtask} />
-                ))}
-              </div>
+              <DndContext sensors={subtaskSensors} collisionDetection={closestCenter} onDragEnd={handleSubtaskDragEnd}>
+                <SortableContext items={subtasks.map((s) => s.subtaskId)} strategy={verticalListSortingStrategy}>
+                  <div className="mb-2 -mx-1">
+                    {subtasks.map((s) => (
+                      <SortableSubtask
+                        key={s.subtaskId}
+                        subtask={s}
+                        onToggle={handleToggleSubtask}
+                        onDelete={handleDeleteSubtask}
+                        onEdit={handleEditSubtask}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             </>
           )}
 

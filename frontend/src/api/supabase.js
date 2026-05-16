@@ -53,6 +53,7 @@ const fmtSubtask = (s) => ({
   taskId: s.task_id,
   title: s.title,
   completed: s.completed,
+  position: s.position ?? 0,
   created_at: s.created_at,
 });
 
@@ -274,14 +275,14 @@ export const tasksApi = {
 export const subtasksApi = {
   list: async (projectId, taskId) => {
     const { data, error } = await supabase
-      .from('subtasks').select('*').eq('task_id', taskId).order('created_at');
+      .from('subtasks').select('*').eq('task_id', taskId).order('position').order('created_at');
     if (error) wrap(error);
     return { data: { subtasks: (data || []).map(fmtSubtask) } };
   },
 
-  create: async (projectId, taskId, { title }) => {
+  create: async (projectId, taskId, { title, position }) => {
     const { data, error } = await supabase
-      .from('subtasks').insert({ task_id: taskId, title }).select().single();
+      .from('subtasks').insert({ task_id: taskId, title, position: position ?? 0 }).select().single();
     if (error) wrap(error);
     return { data: fmtSubtask(data) };
   },
@@ -290,9 +291,19 @@ export const subtasksApi = {
     const updates = {};
     if (fields.title !== undefined)     updates.title = fields.title;
     if (fields.completed !== undefined) updates.completed = fields.completed;
+    if (fields.position !== undefined)  updates.position = fields.position;
     const { error } = await supabase.from('subtasks').update(updates).eq('id', subtaskId);
     if (error) wrap(error);
     return { data: { message: 'Subtask updated' } };
+  },
+
+  reorder: async (projectId, taskId, orderedIds) => {
+    await Promise.all(
+      orderedIds.map((id, idx) =>
+        supabase.from('subtasks').update({ position: idx }).eq('id', id)
+      )
+    );
+    return { data: { message: 'Reordered' } };
   },
 
   delete: async (projectId, taskId, subtaskId) => {
