@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, FolderKanban, X, AlertCircle, CheckCircle2, Clock, Circle, MoreHorizontal, Check } from 'lucide-react';
 import { projectsApi, tasksApi } from '../api/supabase';
+import Avatar from '../components/Avatar';
 import { useAuth } from '../context/AuthContext';
 import Layout from '../components/Layout';
 import ProjectSettingsModal from '../components/ProjectSettingsModal';
@@ -106,7 +107,7 @@ function CreateProjectModal({ onClose, onCreate }) {
   );
 }
 
-function ProjectCard({ project, stats, onClick, onSettings }) {
+function ProjectCard({ project, stats, members = [], onClick, onSettings }) {
   const { total, done, inProgress } = stats || { total: 0, done: 0, inProgress: 0 };
   const todo  = total - done - inProgress;
   const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -139,9 +140,24 @@ function ProjectCard({ project, stats, onClick, onSettings }) {
           <h3 className="font-semibold text-slate-100 truncate group-hover:text-white transition leading-tight">
             {project.name}
           </h3>
-          {project.description && (
-            <p className="text-xs text-slate-500 truncate mt-0.5">{project.description}</p>
-          )}
+          <div className="flex items-center gap-2 mt-1">
+            {project.description && (
+              <p className="text-xs text-slate-500 truncate">{project.description}</p>
+            )}
+            {members.length > 0 && (
+              <div className="flex items-center flex-shrink-0">
+                {members.slice(0, 5).map((m, i) => (
+                  <div key={m.userId} style={{ marginLeft: i > 0 ? '-5px' : 0, zIndex: 5 - i }}>
+                    <Avatar name={m.name} color={m.avatar_color} size="xs"
+                      className="ring-1 ring-app-card" />
+                  </div>
+                ))}
+                {members.length > 5 && (
+                  <span className="ml-1 text-[10px] text-slate-500">+{members.length - 5}</span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -253,6 +269,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [projects, setProjects]       = useState([]);
   const [statsMap, setStatsMap]       = useState({});
+  const [membersMap, setMembersMap]   = useState({});
   const [loading, setLoading]         = useState(true);
   const [showCreate, setShowCreate]   = useState(false);
   const [settingsProject, setSettingsProject] = useState(null);
@@ -281,8 +298,19 @@ export default function DashboardPage() {
     projectsApi.list().then(async ({ data }) => {
       const list = data.projects;
       setProjects(list);
-      const map = await loadStats(list);
-      setStatsMap(map);
+      const accepted = list.filter((p) => p.memberStatus === 'accepted');
+      const [statsResult, membersResult] = await Promise.all([
+        loadStats(list),
+        Promise.all(accepted.map((p) =>
+          projectsApi.members(p.projectId)
+            .then(({ data }) => ({ id: p.projectId, members: data.members }))
+            .catch(() => ({ id: p.projectId, members: [] }))
+        )),
+      ]);
+      setStatsMap(statsResult);
+      const mmap = {};
+      membersResult.forEach(({ id, members }) => { mmap[id] = members; });
+      setMembersMap(mmap);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -419,6 +447,7 @@ export default function DashboardPage() {
                 key={p.projectId}
                 project={p}
                 stats={statsMap[p.projectId]}
+                members={membersMap[p.projectId] || []}
                 onClick={() => navigate(`/projects/${p.projectId}`)}
                 onSettings={setSettingsProject}
               />
