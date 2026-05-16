@@ -63,7 +63,7 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange }) {
           {priority.label}
         </span>
       </td>
-      <td className="py-3 pr-3 w-32 hidden md:table-cell" onClick={(e) => e.stopPropagation()}>
+      <td className="py-3 pr-3 w-32 hidden sm:table-cell" onClick={(e) => e.stopPropagation()}>
         {editingDate ? (
           <input
             autoFocus
@@ -256,7 +256,7 @@ export default function ListView({
             <th className="py-3 pl-4 pr-2 w-8" />
             <th className="py-3 pr-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Task</th>
             <th className="py-3 pr-3 w-24 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Priority</th>
-            <th className="py-3 pr-3 w-32 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Due date</th>
+            <th className="py-3 pr-3 w-32 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Due date</th>
             <th className="py-3 pr-4 w-10 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Assignee</th>
           </tr>
         </thead>
