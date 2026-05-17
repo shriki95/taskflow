@@ -121,7 +121,7 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange, allG
             <Calendar size={12} />
             {dueDate
               ? format(dueDate, density === 'dense' ? 'MMM d' : 'MMM d, yyyy')
-              : <span className="opacity-0 group-hover:opacity-100">Add date</span>
+              : <span className="text-slate-600">Add date</span>
             }
           </button>
         )}

@@ -222,7 +222,7 @@ export default function TaskCard({
                 title={onDueDateChange ? 'Click to change due date' : undefined}
               >
                 <Calendar size={11} />
-                {dueDate ? format(dueDate, 'MMM d') : <span className="opacity-0 group-hover:opacity-100">Add date</span>}
+                {dueDate ? format(dueDate, 'MMM d') : <span className="text-slate-600">Add date</span>}
               </button>
             )}
             {density === 'comfortable' && assignee && (
