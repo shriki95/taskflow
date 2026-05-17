@@ -367,6 +367,7 @@ export default function KanbanBoard({
   onGroupDelete,
   onGroupReorder,
   onTaskDelete,
+  onTasksReorder,
   density = 'comfortable',
 }) {
   const [activeTask, setActiveTask] = useState(null);
@@ -443,19 +444,34 @@ export default function KanbanBoard({
 
     activeDragTypeRef.current = null;
     setActiveTask(null);
-    if (!over) return;
+    if (!over || active.id === over.id) return;
 
     const targetId = over.id;
-    const newGroupId = targetId === '__none__'
-      ? null
-      : groups.find((g) => g.groupId === targetId)?.groupId ?? null;
-    const currentGroupId = (() => {
-      const raw = findGroupId(active.id);
-      return raw === '__none__' ? null : raw;
-    })();
+    const activeId = active.id;
+
+    const currentGroupRaw = findGroupId(activeId);
+    const currentGroupId = currentGroupRaw === '__none__' ? null : currentGroupRaw;
+
+    // Determine target group: could be a column droppable or another task
+    let newGroupRaw;
+    if (targetId === '__none__' || groups.some((g) => g.groupId === targetId)) {
+      newGroupRaw = targetId;
+    } else {
+      newGroupRaw = findGroupId(targetId);
+    }
+    const newGroupId = newGroupRaw === '__none__' ? null : newGroupRaw;
 
     if (newGroupId !== currentGroupId) {
-      onColumnChange(active.id, newGroupId);
+      onColumnChange(activeId, newGroupId);
+    } else {
+      // Same column — reorder
+      const colKey = currentGroupRaw || '__none__';
+      const colTasks = tasksByGroup[colKey] || [];
+      const oldIdx = colTasks.findIndex((t) => t.taskId === activeId);
+      const newIdx = colTasks.findIndex((t) => t.taskId === targetId);
+      if (oldIdx !== -1 && newIdx !== -1 && oldIdx !== newIdx && onTasksReorder) {
+        onTasksReorder(arrayMove(colTasks, oldIdx, newIdx).map((t) => t.taskId));
+      }
     }
   };
 

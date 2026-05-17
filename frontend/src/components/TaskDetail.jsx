@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { format, addDays, differenceInDays } from 'date-fns';
 import {
-  X, Trash2, CheckSquare, Square, Send, ChevronDown, Flag, Calendar,
+  X, Trash2, Copy, CheckSquare, Square, Send, ChevronDown, Flag, Calendar,
   User, AlignLeft, Plus, Check, Layers, Clock, CheckCircle2, Circle,
   RotateCcw, AlertCircle, GripVertical,
 } from 'lucide-react';
@@ -166,7 +166,7 @@ function SortableSubtask({ subtask, onToggle, onDelete, onEdit }) {
   );
 }
 
-export default function TaskDetail({ task, projectId, members, groups = [], onClose, onUpdate, onDelete }) {
+export default function TaskDetail({ task, projectId, members, groups = [], onClose, onUpdate, onDelete, onDuplicate }) {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640);
 
   useEffect(() => {
@@ -322,6 +322,13 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
     onDelete(task.taskId);
   };
 
+  const handleDuplicate = async () => {
+    if (!onDuplicate) return;
+    const { data } = await tasksApi.duplicate(projectId, task.taskId);
+    onDuplicate(data);
+    onClose();
+  };
+
   const isDone                = task.status === 'done';
   const completedSubtasks     = subtasks.filter((s) => s.completed).length;
   const pendingSubtasks       = subtasks.length - completedSubtasks;
@@ -357,6 +364,11 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
           )}
         </div>
         <div className="flex items-center gap-1">
+          {onDuplicate && (
+            <button onClick={handleDuplicate} className="text-slate-600 hover:text-brand-accent transition p-1.5 rounded-lg hover:bg-brand-accent/10" title="Duplicate task">
+              <Copy size={15} />
+            </button>
+          )}
           <button onClick={handleDelete} className="text-slate-600 hover:text-red-400 transition p-1.5 rounded-lg hover:bg-red-400/10" title="Delete task">
             <Trash2 size={15} />
           </button>

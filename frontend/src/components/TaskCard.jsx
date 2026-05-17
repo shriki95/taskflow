@@ -5,9 +5,9 @@ import Avatar from './Avatar';
 import { isRTL, formatDuration } from '../utils/text';
 
 const PRIORITY = {
-  high: { label: 'High', cls: 'text-red-400 bg-red-400/10 border-red-400/20' },
-  medium: { label: 'Medium', cls: 'text-amber-400 bg-amber-400/10 border-amber-400/20' },
-  low: { label: 'Low', cls: 'text-blue-400 bg-blue-400/10 border-blue-400/20' },
+  high:   { label: 'High',   cls: 'text-red-400 bg-red-400/10 border-red-400/20',     border: 'border-l-red-500'   },
+  medium: { label: 'Medium', cls: 'text-amber-400 bg-amber-400/10 border-amber-400/20', border: 'border-l-amber-500' },
+  low:    { label: 'Low',    cls: 'text-blue-400 bg-blue-400/10 border-blue-400/20',   border: 'border-l-blue-500'  },
 };
 
 export default function TaskCard({
@@ -68,8 +68,9 @@ export default function TaskCard({
   return (
     <div
       onClick={onClick}
-      className={`bg-app-card border cursor-pointer transition-all group select-none
+      className={`bg-app-card border border-l-2 cursor-pointer transition-all group select-none
         ${cardCls}
+        ${priority.border}
         ${isDone ? 'opacity-60' : ''}
         ${dragging
           ? 'border-brand-accent shadow-lg shadow-brand-accent/20 rotate-1'

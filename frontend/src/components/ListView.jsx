@@ -14,6 +14,8 @@ import { CSS } from '@dnd-kit/utilities';
 import Avatar from './Avatar';
 import { isRTL } from '../utils/text';
 
+const TASK_PREFIX = 'task-';
+
 const PRIORITY = {
   high: { label: 'High', cls: 'text-red-400 bg-red-400/10' },
   medium: { label: 'Medium', cls: 'text-amber-400 bg-amber-400/10' },
@@ -259,6 +261,32 @@ function GroupSectionHeader({ group, taskCount, onRename, onDelete, onAddTask, d
   );
 }
 
+function SortableTaskRow({ task, members, onTaskClick, onStatusChange, onDueDateChange, allGroups, onTaskDelete, onColumnChange, density }) {
+  const { setNodeRef, attributes, listeners, transform, transition, isDragging } =
+    useSortable({ id: `${TASK_PREFIX}${task.taskId}` });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      {...attributes}
+      {...listeners}
+    >
+      <TaskRow
+        task={task}
+        members={members}
+        onClick={() => onTaskClick(task)}
+        onStatusChange={onStatusChange}
+        onDueDateChange={onDueDateChange}
+        allGroups={allGroups}
+        onDelete={onTaskDelete}
+        onMoveToGroup={onColumnChange}
+        density={density}
+      />
+    </div>
+  );
+}
+
 function SortableGroupSection({ group, tasks, members, onTaskClick, onStatusChange, onDueDateChange, onRename, onDelete, onAddTask, allGroups, onTaskDelete, onColumnChange, density }) {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } =
     useSortable({ id: group.groupId });
@@ -276,20 +304,22 @@ function SortableGroupSection({ group, tasks, members, onTaskClick, onStatusChan
         onAddTask={(gId) => onAddTask({ groupId: gId })}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
-      {tasks.map((task) => (
-        <TaskRow
-          key={task.taskId}
-          task={task}
-          members={members}
-          onClick={() => onTaskClick(task)}
-          onStatusChange={onStatusChange}
-          onDueDateChange={onDueDateChange}
-          allGroups={allGroups}
-          onDelete={onTaskDelete}
-          onMoveToGroup={onColumnChange}
-          density={density}
-        />
-      ))}
+      <SortableContext items={tasks.map((t) => `${TASK_PREFIX}${t.taskId}`)} strategy={verticalListSortingStrategy}>
+        {tasks.map((task) => (
+          <SortableTaskRow
+            key={task.taskId}
+            task={task}
+            members={members}
+            onTaskClick={onTaskClick}
+            onStatusChange={onStatusChange}
+            onDueDateChange={onDueDateChange}
+            allGroups={allGroups}
+            onTaskDelete={onTaskDelete}
+            onColumnChange={onColumnChange}
+            density={density}
+          />
+        ))}
+      </SortableContext>
     </div>
   );
 }
@@ -297,7 +327,7 @@ function SortableGroupSection({ group, tasks, members, onTaskClick, onStatusChan
 export default function ListView({
   tasks, members, onTaskClick, onStatusChange, onDueDateChange, onAddTask,
   groups = [], onGroupCreate, onGroupUpdate, onGroupDelete, onGroupReorder,
-  onColumnChange, onTaskDelete, density = 'comfortable',
+  onColumnChange, onTaskDelete, onTasksReorder, density = 'comfortable',
 }) {
   const [addingGroup, setAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
@@ -314,12 +344,30 @@ export default function ListView({
     setAddingGroup(false);
   };
 
-  const handleSectionDragEnd = ({ active, over }) => {
+  const handleDragEnd = ({ active, over }) => {
     if (!over || active.id === over.id) return;
-    const oldIdx = groups.findIndex((g) => g.groupId === active.id);
-    const newIdx = groups.findIndex((g) => g.groupId === over.id);
-    if (oldIdx !== -1 && newIdx !== -1 && onGroupReorder) {
-      onGroupReorder(arrayMove(groups, oldIdx, newIdx));
+    const activeStr = String(active.id);
+    if (activeStr.startsWith(TASK_PREFIX)) {
+      const overStr = String(over.id);
+      if (!overStr.startsWith(TASK_PREFIX)) return;
+      const activeTaskId = activeStr.slice(TASK_PREFIX.length);
+      const overTaskId = overStr.slice(TASK_PREFIX.length);
+      const activeTasks = tasks.filter((t) => t.status !== 'done');
+      for (const group of groups) {
+        const gTasks = activeTasks.filter((t) => t.group_id === group.groupId);
+        const oldIdx = gTasks.findIndex((t) => t.taskId === activeTaskId);
+        const newIdx = gTasks.findIndex((t) => t.taskId === overTaskId);
+        if (oldIdx !== -1 && newIdx !== -1) {
+          if (onTasksReorder) onTasksReorder(arrayMove(gTasks, oldIdx, newIdx).map((t) => t.taskId));
+          break;
+        }
+      }
+    } else {
+      const oldIdx = groups.findIndex((g) => g.groupId === active.id);
+      const newIdx = groups.findIndex((g) => g.groupId === over.id);
+      if (oldIdx !== -1 && newIdx !== -1 && onGroupReorder) {
+        onGroupReorder(arrayMove(groups, oldIdx, newIdx));
+      }
     }
   };
 
@@ -327,7 +375,7 @@ export default function ListView({
   const activeTasks = tasks.filter((t) => t.status !== 'done');
 
   const renderGroupContent = () => (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={groups.map((g) => g.groupId)} strategy={verticalListSortingStrategy}>
         {groups.map((group) => {
           const groupTasks = activeTasks.filter((t) => t.group_id === group.groupId);

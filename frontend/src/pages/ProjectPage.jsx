@@ -72,6 +72,10 @@ export default function ProjectPage() {
   const [density, setDensity] = useState(() => {
     try { return localStorage.getItem(`tf-density-${projectId}`) || 'comfortable'; } catch { return 'comfortable'; }
   });
+
+  useEffect(() => {
+    try { setDensity(localStorage.getItem(`tf-density-${projectId}`) || 'comfortable'); } catch { setDensity('comfortable'); }
+  }, [projectId]);
   const [showHolidays, setShowHolidays] = useState(() => {
     try { return localStorage.getItem('tf-show-holidays') === 'true'; } catch { return false; }
   });
@@ -181,6 +185,33 @@ export default function ProjectPage() {
       reorderedGroups.map((g, idx) => taskGroupsApi.update(g.groupId, { position: idx }))
     );
   }, []);
+
+  const handleTaskDuplicate = useCallback((newTask) => {
+    setTasks((prev) => [...prev, newTask]);
+    setSelectedTask(null);
+  }, []);
+
+  const handleTasksReorder = useCallback(async (orderedIds) => {
+    setTasks((prev) => {
+      const reorderedSet = new Set(orderedIds);
+      const reorderedTasks = orderedIds
+        .map((id) => prev.find((t) => t.taskId === id))
+        .filter(Boolean)
+        .map((t, i) => ({ ...t, position: i }));
+      const result = [];
+      let added = false;
+      for (const t of prev) {
+        if (!reorderedSet.has(t.taskId)) {
+          result.push(t);
+        } else if (!added) {
+          result.push(...reorderedTasks);
+          added = true;
+        }
+      }
+      return result;
+    });
+    try { await tasksApi.reorder(projectId, orderedIds); } catch {}
+  }, [projectId]);
 
   const handleTaskDeleteFromCard = useCallback(async (taskId) => {
     setTasks((prev) => prev.filter((t) => t.taskId !== taskId));
@@ -384,6 +415,7 @@ export default function ProjectPage() {
                 onGroupDelete={handleGroupDelete}
                 onGroupReorder={handleGroupReorder}
                 onTaskDelete={handleTaskDeleteFromCard}
+                onTasksReorder={handleTasksReorder}
                 density={density}
               />
             )}
@@ -402,6 +434,7 @@ export default function ProjectPage() {
                 onGroupReorder={handleGroupReorder}
                 onColumnChange={handleColumnChange}
                 onTaskDelete={handleTaskDeleteFromCard}
+                onTasksReorder={handleTasksReorder}
                 density={density}
               />
             )}
@@ -456,6 +489,7 @@ export default function ProjectPage() {
                 onClose={() => setSelectedTask(null)}
                 onUpdate={handleTaskUpdate}
                 onDelete={handleTaskDelete}
+                onDuplicate={handleTaskDuplicate}
               />
             )}
           </AnimatePresence>

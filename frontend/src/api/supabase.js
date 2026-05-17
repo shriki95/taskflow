@@ -294,7 +294,8 @@ export const projectsApi = {
 export const tasksApi = {
   list: async (projectId) => {
     const { data, error } = await supabase
-      .from('tasks').select('*, subtasks(id, completed)').eq('project_id', projectId);
+      .from('tasks').select('*, subtasks(id, completed)').eq('project_id', projectId)
+      .order('position', { ascending: true }).order('created_at', { ascending: true });
     if (error) wrap(error);
     return { data: { tasks: (data || []).map(fmtTask) } };
   },
@@ -342,6 +343,7 @@ export const tasksApi = {
     if (fields.group_id !== undefined)         updates.group_id = fields.group_id;
     if (fields.duration_minutes !== undefined) updates.duration_minutes = fields.duration_minutes;
     if (fields.span_days !== undefined)        updates.span_days = fields.span_days;
+    if (fields.position !== undefined)         updates.position = fields.position;
 
     const { data, error } = await supabase
       .from('tasks').update(updates).eq('id', taskId).select().single();
@@ -353,6 +355,49 @@ export const tasksApi = {
     const { error } = await supabase.from('tasks').delete().eq('id', taskId);
     if (error) wrap(error);
     return { data: { message: 'Task deleted' } };
+  },
+
+  duplicate: async (projectId, taskId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: orig, error: getErr } = await supabase
+      .from('tasks').select('*, subtasks(id, title, completed, position)').eq('id', taskId).single();
+    if (getErr) wrap(getErr);
+    const { data: copy, error: insErr } = await supabase
+      .from('tasks')
+      .insert({
+        project_id: orig.project_id,
+        title: orig.title + ' (copy)',
+        description: orig.description,
+        status: 'todo',
+        priority: orig.priority,
+        due_date: orig.due_date,
+        assignee_id: orig.assignee_id,
+        group_id: orig.group_id,
+        duration_minutes: orig.duration_minutes,
+        span_days: orig.span_days,
+        position: (orig.position ?? 0) + 1,
+        created_by: user.id,
+      })
+      .select().single();
+    if (insErr) wrap(insErr);
+    const subtasks = orig.subtasks || [];
+    if (subtasks.length) {
+      await supabase.from('subtasks').insert(
+        subtasks.map((s) => ({ task_id: copy.id, title: s.title, completed: false, position: s.position }))
+      );
+    }
+    const { data: final } = await supabase
+      .from('tasks').select('*, subtasks(id, completed)').eq('id', copy.id).single();
+    return { data: fmtTask(final || { ...copy, subtasks: [] }) };
+  },
+
+  reorder: async (projectId, orderedIds) => {
+    await Promise.all(
+      orderedIds.map((id, idx) =>
+        supabase.from('tasks').update({ position: idx }).eq('id', id).eq('project_id', projectId)
+      )
+    );
+    return { data: { message: 'Reordered' } };
   },
 };
 
