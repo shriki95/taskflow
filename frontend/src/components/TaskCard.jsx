@@ -203,8 +203,8 @@ export default function TaskCard({
       {density !== 'dense' && (
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
-            <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${priority.cls}`}>
-              {density === 'compact' ? priority.label[0] : priority.label}
+            <span className={`text-xs px-1.5 py-0.5 rounded-full border font-semibold ${priority.cls}`}>
+              {priority.label}
             </span>
             {density === 'comfortable' && formatDuration(task.duration_minutes) && (
               <span className="flex items-center gap-0.5 text-xs text-slate-500 bg-app-bg border border-app-border px-1.5 py-0.5 rounded-full">
