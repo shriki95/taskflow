@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Calendar, CheckCircle2, Circle, Clock, MoreHorizontal, Trash2, ArrowRight } from 'lucide-react';
+import { Calendar, CheckCircle2, Circle, Clock, Copy, MoreHorizontal, Trash2, ArrowRight } from 'lucide-react';
 import { format, isPast, isToday } from 'date-fns';
 import Avatar from './Avatar';
 import { isRTL, formatDuration } from '../utils/text';
@@ -20,6 +20,7 @@ export default function TaskCard({
   groups = [],
   onDelete,
   onMoveToGroup,
+  onDuplicate,
   density = 'comfortable',
 }) {
   const [editingDate, setEditingDate] = useState(false);
@@ -31,7 +32,7 @@ export default function TaskCard({
   const isDone = task.status === 'done';
   const isOverdue = dueDate && isPast(dueDate) && !isToday(dueDate) && !isDone;
   const otherGroups = groups.filter((g) => g.groupId !== task.group_id);
-  const showMenu = !dragging && (onDelete || (onMoveToGroup && otherGroups.length > 0));
+  const showMenu = !dragging && (onDelete || onDuplicate || (onMoveToGroup && otherGroups.length > 0));
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -130,6 +131,15 @@ export default function TaskCard({
                     ))}
                     {onDelete && <div className="my-1 border-t border-app-border" />}
                   </>
+                )}
+                {onDuplicate && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDuplicate(task.taskId); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 hover:bg-app-bg transition"
+                  >
+                    <Copy size={11} />
+                    Duplicate task
+                  </button>
                 )}
                 {onDelete && (
                   <button

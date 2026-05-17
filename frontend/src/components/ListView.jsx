@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { format, isPast, isToday } from 'date-fns';
 import {
-  Calendar, Plus, Circle, CheckCircle2, Clock, Trash2, FolderPlus,
+  Calendar, Plus, Circle, CheckCircle2, Clock, Copy, Trash2, FolderPlus,
   MoreHorizontal, ArrowRight, GripVertical,
 } from 'lucide-react';
 import {
@@ -44,7 +44,7 @@ const COL = {
   menu:     'w-8 flex-shrink-0 pr-2 hidden sm:flex items-center justify-center',
 };
 
-function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange, allGroups = [], onDelete, onMoveToGroup, density = 'comfortable' }) {
+function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange, allGroups = [], onDelete, onMoveToGroup, onDuplicate, density = 'comfortable' }) {
   const [editingDate, setEditingDate] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuContainerRef = useRef();
@@ -54,7 +54,7 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange, allG
   const isDone = task.status === 'done';
   const isOverdue = dueDate && isPast(dueDate) && !isToday(dueDate) && !isDone;
   const otherGroups = allGroups.filter((g) => g.groupId !== task.group_id);
-  const showMenu = onDelete || (onMoveToGroup && otherGroups.length > 0);
+  const showMenu = onDelete || onDuplicate || (onMoveToGroup && otherGroups.length > 0);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -168,6 +168,15 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange, allG
                   {onDelete && <div className="my-1 border-t border-app-border" />}
                 </>
               )}
+              {onDuplicate && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDuplicate(task.taskId); setMenuOpen(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 hover:bg-app-bg transition"
+                >
+                  <Copy size={11} />
+                  Duplicate task
+                </button>
+              )}
               {onDelete && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(task.taskId); setMenuOpen(false); }}
@@ -261,7 +270,7 @@ function GroupSectionHeader({ group, taskCount, onRename, onDelete, onAddTask, d
   );
 }
 
-function SortableTaskRow({ task, members, onTaskClick, onStatusChange, onDueDateChange, allGroups, onTaskDelete, onColumnChange, density }) {
+function SortableTaskRow({ task, members, onTaskClick, onStatusChange, onDueDateChange, allGroups, onTaskDelete, onTaskDuplicate, onColumnChange, density }) {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } =
     useSortable({ id: `${TASK_PREFIX}${task.taskId}` });
 
@@ -280,6 +289,7 @@ function SortableTaskRow({ task, members, onTaskClick, onStatusChange, onDueDate
         onDueDateChange={onDueDateChange}
         allGroups={allGroups}
         onDelete={onTaskDelete}
+        onDuplicate={onTaskDuplicate}
         onMoveToGroup={onColumnChange}
         density={density}
       />
@@ -287,7 +297,7 @@ function SortableTaskRow({ task, members, onTaskClick, onStatusChange, onDueDate
   );
 }
 
-function SortableGroupSection({ group, tasks, members, onTaskClick, onStatusChange, onDueDateChange, onRename, onDelete, onAddTask, allGroups, onTaskDelete, onColumnChange, density }) {
+function SortableGroupSection({ group, tasks, members, onTaskClick, onStatusChange, onDueDateChange, onRename, onDelete, onAddTask, allGroups, onTaskDelete, onTaskDuplicate, onColumnChange, density }) {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } =
     useSortable({ id: group.groupId });
 
@@ -315,6 +325,7 @@ function SortableGroupSection({ group, tasks, members, onTaskClick, onStatusChan
             onDueDateChange={onDueDateChange}
             allGroups={allGroups}
             onTaskDelete={onTaskDelete}
+            onTaskDuplicate={onTaskDuplicate}
             onColumnChange={onColumnChange}
             density={density}
           />
@@ -327,7 +338,7 @@ function SortableGroupSection({ group, tasks, members, onTaskClick, onStatusChan
 export default function ListView({
   tasks, members, onTaskClick, onStatusChange, onDueDateChange, onAddTask,
   groups = [], onGroupCreate, onGroupUpdate, onGroupDelete, onGroupReorder,
-  onColumnChange, onTaskDelete, onTasksReorder, density = 'comfortable',
+  onColumnChange, onTaskDelete, onTaskDuplicate, onTasksReorder, density = 'comfortable',
 }) {
   const [addingGroup, setAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
@@ -393,6 +404,7 @@ export default function ListView({
               onAddTask={onAddTask}
               allGroups={groups}
               onTaskDelete={onTaskDelete}
+              onTaskDuplicate={onTaskDuplicate}
               onColumnChange={onColumnChange}
               density={density}
             />
@@ -423,6 +435,7 @@ export default function ListView({
                 onDueDateChange={onDueDateChange}
                 allGroups={groups}
                 onDelete={onTaskDelete}
+                onDuplicate={onTaskDuplicate}
                 onMoveToGroup={onColumnChange}
                 density={density}
               />

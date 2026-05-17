@@ -28,7 +28,7 @@ const COL_COLORS = [
 // Prefix used to distinguish column sortable IDs from task IDs
 const COL_PREFIX = 'col-';
 
-function SortableCard({ task, members, onClick, onStatusChange, onDueDateChange, groups, onDelete, onMoveToGroup, density }) {
+function SortableCard({ task, members, onClick, onStatusChange, onDueDateChange, groups, onDelete, onMoveToGroup, onDuplicate, density }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: task.taskId });
 
@@ -48,6 +48,7 @@ function SortableCard({ task, members, onClick, onStatusChange, onDueDateChange,
         groups={groups}
         onDelete={onDelete}
         onMoveToGroup={onMoveToGroup}
+        onDuplicate={onDuplicate}
         density={density}
       />
     </div>
@@ -57,7 +58,7 @@ function SortableCard({ task, members, onClick, onStatusChange, onDueDateChange,
 function Column({
   col, tasks, members, colorIndex, onTaskClick, onAddTask, onStatusChange, onDueDateChange,
   onRename, onDelete, editable, deletable, dragHandleProps,
-  groups, onTaskDelete, onTaskMoveToGroup, density,
+  groups, onTaskDelete, onTaskMoveToGroup, onTaskDuplicate, density,
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id });
   const [editing, setEditing] = useState(false);
@@ -164,6 +165,7 @@ function Column({
               groups={groups}
               onDelete={onTaskDelete}
               onMoveToGroup={onTaskMoveToGroup}
+              onDuplicate={onTaskDuplicate}
               density={density}
             />
           ))}
@@ -367,6 +369,7 @@ export default function KanbanBoard({
   onGroupDelete,
   onGroupReorder,
   onTaskDelete,
+  onTaskDuplicate,
   onTasksReorder,
   density = 'comfortable',
 }) {
@@ -503,6 +506,7 @@ export default function KanbanBoard({
               groups={groups}
               onTaskDelete={onTaskDelete}
               onTaskMoveToGroup={onColumnChange}
+              onTaskDuplicate={onTaskDuplicate}
               density={density}
             />
           )}
@@ -529,6 +533,7 @@ export default function KanbanBoard({
                 groups={groups}
                 onTaskDelete={onTaskDelete}
                 onTaskMoveToGroup={onColumnChange}
+                onTaskDuplicate={onTaskDuplicate}
                 density={density}
               />
             ))}

@@ -191,6 +191,13 @@ export default function ProjectPage() {
     setSelectedTask(null);
   }, []);
 
+  const handleTaskDuplicateFromCard = useCallback(async (taskId) => {
+    try {
+      const { data } = await tasksApi.duplicate(projectId, taskId);
+      setTasks((prev) => [...prev, data]);
+    } catch {}
+  }, [projectId]);
+
   const handleTasksReorder = useCallback(async (orderedIds) => {
     setTasks((prev) => {
       const reorderedSet = new Set(orderedIds);
@@ -415,6 +422,7 @@ export default function ProjectPage() {
                 onGroupDelete={handleGroupDelete}
                 onGroupReorder={handleGroupReorder}
                 onTaskDelete={handleTaskDeleteFromCard}
+                onTaskDuplicate={handleTaskDuplicateFromCard}
                 onTasksReorder={handleTasksReorder}
                 density={density}
               />
@@ -434,6 +442,7 @@ export default function ProjectPage() {
                 onGroupReorder={handleGroupReorder}
                 onColumnChange={handleColumnChange}
                 onTaskDelete={handleTaskDeleteFromCard}
+                onTaskDuplicate={handleTaskDuplicateFromCard}
                 onTasksReorder={handleTasksReorder}
                 density={density}
               />
