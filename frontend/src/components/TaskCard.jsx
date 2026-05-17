@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Calendar, CheckCircle2, Circle, Clock, Copy, MoreHorizontal, Trash2, ArrowRight } from 'lucide-react';
+import { Calendar, CheckCircle2, Circle, Clock, Copy, MoreHorizontal, Trash2, ArrowRight, RefreshCw } from 'lucide-react';
 import { format, isPast, isToday } from 'date-fns';
 import Avatar from './Avatar';
 import { isRTL, formatDuration } from '../utils/text';
@@ -206,6 +206,12 @@ export default function TaskCard({
             <span className={`text-xs px-1.5 py-0.5 rounded-full border font-semibold ${priority.cls}`}>
               {priority.label}
             </span>
+            {task.recurrence_rule?.freq && (
+              <span className="flex items-center gap-0.5 text-xs text-slate-500 bg-app-bg border border-app-border px-1.5 py-0.5 rounded-full" title="Recurring task">
+                <RefreshCw size={9} />
+                {task.completions_count > 0 ? task.completions_count : ''}
+              </span>
+            )}
             {density === 'comfortable' && formatDuration(task.duration_minutes) && (
               <span className="flex items-center gap-0.5 text-xs text-slate-500 bg-app-bg border border-app-border px-1.5 py-0.5 rounded-full">
                 <Clock size={9} />

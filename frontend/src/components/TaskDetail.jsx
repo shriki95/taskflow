@@ -4,7 +4,7 @@ import { format, addDays, differenceInDays } from 'date-fns';
 import {
   X, Trash2, Copy, CheckSquare, Square, Send, ChevronDown, Flag, Calendar,
   User, AlignLeft, Plus, Check, Layers, Clock, CheckCircle2, Circle,
-  RotateCcw, AlertCircle, GripVertical,
+  RotateCcw, AlertCircle, GripVertical, RefreshCw,
 } from 'lucide-react';
 import {
   DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors,
@@ -13,7 +13,8 @@ import {
   SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { tasksApi, subtasksApi, commentsApi } from '../api/supabase';
+import { tasksApi, subtasksApi, commentsApi, taskCompletionsApi } from '../api/supabase';
+import { RECURRENCE_OPTIONS } from '../utils/recurrence';
 import Avatar from './Avatar';
 import { isRTL, formatDuration } from '../utils/text';
 
@@ -204,6 +205,10 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
   const [commentText, setCommentText]   = useState('');
   const [sendingComment, setSendingComment] = useState(false);
 
+  const [completions, setCompletions]         = useState([]);
+  const [completionsExpanded, setCompletionsExpanded] = useState(false);
+  const [markingDone, setMarkingDone]         = useState(false);
+
   const titleRef = useRef();
   const descRef  = useRef();
 
@@ -212,7 +217,12 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
     setDescription(task.description || '');
     subtasksApi.list(projectId, task.taskId).then(({ data }) => setSubtasks(data.subtasks));
     commentsApi.list(projectId, task.taskId).then(({ data }) => setComments(data.comments));
-  }, [task.taskId, projectId]);
+    if (task.recurrence_rule?.freq) {
+      taskCompletionsApi.list(task.taskId).then(({ data }) => setCompletions(data.completions));
+    } else {
+      setCompletions([]);
+    }
+  }, [task.taskId, projectId, task.recurrence_rule?.freq]);
 
   const notifySubtaskCounts = (nextSubtasks) => {
     onUpdate({
@@ -329,7 +339,19 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
     onClose();
   };
 
+  const handleMarkDoneRecurring = async () => {
+    setMarkingDone(true);
+    try {
+      const { data } = await taskCompletionsApi.create(task.taskId);
+      setCompletions((prev) => [data, ...prev]);
+      onUpdate({ ...task, completions_count: (task.completions_count || 0) + 1 });
+    } finally {
+      setMarkingDone(false);
+    }
+  };
+
   const isDone                = task.status === 'done';
+  const isRecurring           = !!task.recurrence_rule?.freq;
   const completedSubtasks     = subtasks.filter((s) => s.completed).length;
   const pendingSubtasks       = subtasks.length - completedSubtasks;
   const canMarkDone           = subtasks.length === 0 || pendingSubtasks === 0;
@@ -406,7 +428,23 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
 
         {/* Done / Reopen button */}
         <div className="flex items-center gap-2">
-          {isDone ? (
+          {isRecurring ? (
+            <button
+              onClick={handleMarkDoneRecurring}
+              disabled={markingDone || !canMarkDone}
+              title={!canMarkDone ? `${pendingSubtasks} subtask${pendingSubtasks > 1 ? 's' : ''} remaining` : 'Record completion'}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition
+                ${canMarkDone
+                  ? 'bg-emerald-500/8 border-emerald-500/20 text-emerald-400/90 hover:bg-emerald-500/15'
+                  : 'bg-app-bg border-app-border text-slate-600 cursor-not-allowed'
+                } disabled:opacity-60`}
+            >
+              {canMarkDone
+                ? <><CheckCircle2 size={13} />{markingDone ? 'Saving…' : 'Mark as Done'}</>
+                : <><AlertCircle size={12} className="text-amber-500/60" />{pendingSubtasks} remaining</>
+              }
+            </button>
+          ) : isDone ? (
             <button
               onClick={() => updateField({ status: 'todo' })}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
@@ -534,6 +572,29 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
               ))}
             </select>
           </FieldRow>
+
+          <FieldRow icon={<RefreshCw size={12} />} label="Repeat">
+            <FieldSelect
+              value={task.recurrence_rule?.freq || ''}
+              options={RECURRENCE_OPTIONS.map((o) => ({ value: o.value ?? '', label: o.label }))}
+              onChange={(v) => updateField({ recurrence_rule: v ? { freq: v } : null })}
+              renderValue={(v) => {
+                const opt = RECURRENCE_OPTIONS.find((o) => (o.value ?? '') === v);
+                return (
+                  <span className="flex items-center gap-1.5">
+                    <RefreshCw size={11} className={v ? 'text-brand-accent' : 'text-slate-500'} />
+                    {opt?.label || 'Does not repeat'}
+                  </span>
+                );
+              }}
+              renderOption={(opt) => (
+                <span className="flex items-center gap-1.5">
+                  <RefreshCw size={11} className={opt.value ? 'text-brand-accent' : 'text-slate-500'} />
+                  {opt.label}
+                </span>
+              )}
+            />
+          </FieldRow>
         </div>
 
         {/* Description */}
@@ -629,6 +690,44 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
             </button>
           </form>
         </div>
+
+        {/* Completions history — only for recurring tasks */}
+        {isRecurring && (
+          <div className="bg-app-card/40 border border-app-border rounded-xl px-4 py-3">
+            <button
+              onClick={() => setCompletionsExpanded((v) => !v)}
+              className="w-full flex items-center justify-between"
+            >
+              <div className="flex items-center gap-1.5">
+                <RefreshCw size={13} className="text-brand-accent" />
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Completions</span>
+                <span className="text-xs text-slate-400 font-medium">
+                  {task.completions_count || completions.length} time{(task.completions_count || completions.length) !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <ChevronDown
+                size={14}
+                className={`text-slate-500 transition-transform ${completionsExpanded ? 'rotate-180' : ''}`}
+              />
+            </button>
+            {completionsExpanded && (
+              <div className="mt-3 space-y-1.5">
+                {completions.length === 0 ? (
+                  <p className="text-xs text-slate-600 text-center py-2">No completions recorded yet</p>
+                ) : (
+                  completions.map((c) => (
+                    <div key={c.completionId} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-app-bg border border-app-border">
+                      <CheckCircle2 size={12} className="text-emerald-400 flex-shrink-0" />
+                      <span className="text-xs text-slate-400">
+                        {format(new Date(c.completed_at), 'EEE, MMM d, yyyy · h:mm a')}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Comments */}
         <div className="bg-app-card/40 border border-app-border rounded-xl px-4 py-3">

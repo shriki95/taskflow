@@ -7,6 +7,7 @@ import {
 import { ChevronLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
 import { isRTL } from '../utils/text';
 import { getHolidaysForDate, HOLIDAY_STYLE } from '../utils/israeliHolidays';
+import { taskOccursOnDay } from '../utils/recurrence';
 
 const PRIORITY_BAR = { high: 'bg-red-500', medium: 'bg-amber-500', low: 'bg-blue-500' };
 
@@ -144,9 +145,12 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
   const multiDaySpans = taskSpans.filter(({ task }) => isSpanTask(task));
 
   const singleTasksForDay = (day) =>
-    taskSpans
-      .filter(({ task, span }) => !isSpanTask(task) && span.some((d) => isSameDay(d, day)))
-      .map(({ task }) => task);
+    tasks.filter((t) => {
+      if (!t.due_date) return false;
+      if (isSpanTask(t)) return false;
+      if (t.recurrence_rule?.freq) return taskOccursOnDay(t, day);
+      return isSameDay(new Date(t.due_date), day);
+    });
 
   const showPopover = useCallback((e, isoDay) => {
     clearTimeout(hideTimer.current);

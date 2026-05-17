@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { format, isPast, isToday } from 'date-fns';
 import {
   Calendar, Plus, Circle, CheckCircle2, Clock, Copy, Trash2, FolderPlus,
-  MoreHorizontal, ArrowRight, GripVertical,
+  MoreHorizontal, ArrowRight, GripVertical, RefreshCw,
 } from 'lucide-react';
 import {
   DndContext, closestCenter, MouseSensor, useSensor, useSensors,
@@ -90,8 +90,11 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange, allG
         className={`${COL.title} ${rowPy} flex flex-col ${isRTL(task.title) ? 'items-end text-right' : 'items-start'}`}
         dir={isRTL(task.title) ? 'rtl' : 'ltr'}
       >
-        <span className={`${textSz} font-medium truncate w-full ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}>
+        <span className={`${textSz} font-medium truncate w-full flex items-center gap-1.5 ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}>
           {task.title}
+          {task.recurrence_rule?.freq && (
+            <RefreshCw size={10} className="text-slate-500 flex-shrink-0" title="Recurring task" />
+          )}
         </span>
         <span className={`sm:hidden mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${priority.cls}`}>
           {priority.label}

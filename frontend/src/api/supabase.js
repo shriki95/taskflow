@@ -40,6 +40,8 @@ const fmtTask = (t) => ({
   created_by: t.created_by || null,
   created_at: t.created_at,
   updated_at: t.updated_at,
+  recurrence_rule: t.recurrence_rule || null,
+  completions_count: t.completions_count || 0,
   subtasks_total:     (t.subtasks || []).length,
   subtasks_completed: (t.subtasks || []).filter((s) => s.completed).length,
 });
@@ -342,8 +344,9 @@ export const tasksApi = {
     if (fields.assignee_id !== undefined) updates.assignee_id = fields.assignee_id;
     if (fields.group_id !== undefined)         updates.group_id = fields.group_id;
     if (fields.duration_minutes !== undefined) updates.duration_minutes = fields.duration_minutes;
-    if (fields.span_days !== undefined)        updates.span_days = fields.span_days;
-    if (fields.position !== undefined)         updates.position = fields.position;
+    if (fields.span_days !== undefined)         updates.span_days = fields.span_days;
+    if (fields.position !== undefined)          updates.position = fields.position;
+    if (fields.recurrence_rule !== undefined)   updates.recurrence_rule = fields.recurrence_rule;
 
     const { data, error } = await supabase
       .from('tasks').update(updates).eq('id', taskId).select().single();
@@ -524,6 +527,42 @@ export const taskGroupsApi = {
     const { error } = await supabase.from('task_groups').delete().eq('id', groupId);
     if (error) wrap(error);
     return { data: { message: 'Group deleted' } };
+  },
+};
+
+// ══════════════════════════════════════════════════════════════
+// TASK COMPLETIONS API  (for recurring tasks)
+// ══════════════════════════════════════════════════════════════
+export const taskCompletionsApi = {
+  list: async (taskId) => {
+    const { data, error } = await supabase
+      .from('task_completions')
+      .select('id, completed_at, completed_by, note')
+      .eq('task_id', taskId)
+      .order('completed_at', { ascending: false });
+    if (error) wrap(error);
+    return { data: { completions: (data || []).map((c) => ({
+      completionId: c.id,
+      completed_at: c.completed_at,
+      completed_by: c.completed_by,
+      note: c.note || '',
+    })) } };
+  },
+
+  create: async (taskId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data, error } = await supabase
+      .from('task_completions')
+      .insert({ task_id: taskId, completed_by: user.id })
+      .select().single();
+    if (error) wrap(error);
+    return { data: { completionId: data.id, completed_at: data.completed_at } };
+  },
+
+  delete: async (completionId) => {
+    const { error } = await supabase.from('task_completions').delete().eq('id', completionId);
+    if (error) wrap(error);
+    return { data: { message: 'Completion deleted' } };
   },
 };
 
