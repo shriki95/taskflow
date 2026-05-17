@@ -11,20 +11,46 @@
   }
 
   html.light {
-    --app-bg-rgb: 248 250 252;
-    --app-sidebar-rgb: 241 245 249;
+    --app-bg-rgb: 237 242 248;
+    --app-sidebar-rgb: 213 224 237;
     --app-card-rgb: 255 255 255;
-    --app-border-rgb: 226 232 240;
+    --app-border-rgb: 186 204 221;
     color-scheme: light;
+    background-color: rgb(237 242 248);
   }
 
+  /* Remap slate shades so dark text on light background */
   html.light .text-slate-100 { color: #0f172a; }
   html.light .text-slate-200 { color: #1e293b; }
   html.light .text-slate-300 { color: #334155; }
   html.light .text-slate-400 { color: #475569; }
   html.light .text-slate-500 { color: #64748b; }
-  html.light .text-slate-600 { color: #94a3b8; }
-  html.light .text-slate-700 { color: #cbd5e1; }
+  html.light .text-slate-600 { color: #475569; }
+  html.light .text-slate-700 { color: #334155; }
+
+  /* Card shadows so white cards are visible on light bg */
+  html.light .bg-app-card {
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.10), 0 1px 2px rgba(15, 23, 42, 0.06);
+  }
+
+  /* Visible hover states */
+  html.light .hover\:bg-app-bg:hover  { background-color: rgb(213 224 237 / 0.7) !important; }
+  html.light .hover\:bg-app-card:hover { background-color: rgb(237 242 248 / 0.8) !important; }
+
+  /* Colored badges — more opaque on light bg */
+  html.light .bg-red-400\/10    { background-color: rgb(248 113 113 / 0.18) !important; }
+  html.light .bg-amber-400\/10  { background-color: rgb(251 191 36  / 0.20) !important; }
+  html.light .bg-green-400\/10  { background-color: rgb(74  222 128 / 0.20) !important; }
+  html.light .bg-blue-400\/10   { background-color: rgb(96  165 250 / 0.20) !important; }
+  html.light .bg-slate-700\/40  { background-color: rgb(100 116 139 / 0.15) !important; }
+
+  /* brand-accent tinted bg in light */
+  html.light .bg-brand-accent\/10 { background-color: rgba(124, 58, 237, 0.12) !important; }
+  html.light .bg-brand-accent\/20 { background-color: rgba(124, 58, 237, 0.18) !important; }
+
+  /* Prevent hover:text-white turning text invisible on light backgrounds */
+  html.light .hover\:text-white:hover { color: #0f172a !important; }
+  html.light .group:hover .group-hover\:text-white { color: #0f172a !important; }
 
   html.light input[type="date"] { color-scheme: light; }
 
