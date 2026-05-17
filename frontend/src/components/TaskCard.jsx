@@ -69,7 +69,7 @@ export default function TaskCard({
   return (
     <div
       onClick={onClick}
-      className={`bg-app-card border border-l-2 cursor-pointer transition-all group select-none
+      className={`bg-app-card border border-l-4 cursor-pointer transition-all group select-none
         ${cardCls}
         ${priority.border}
         ${isDone ? 'opacity-60' : ''}
