@@ -225,6 +225,16 @@ export const projectsApi = {
     return { data: { message: 'Member added' } };
   },
 
+  removeMember: async (projectId, userId) => {
+    const { error } = await supabase
+      .from('project_members')
+      .delete()
+      .eq('project_id', projectId)
+      .eq('user_id', userId);
+    if (error) wrap(error);
+    return { data: { message: 'Member removed' } };
+  },
+
   invite: async (projectId, userId) => {
     const { data: { user } } = await supabase.auth.getUser();
     const { error } = await supabase.from('project_members').insert({

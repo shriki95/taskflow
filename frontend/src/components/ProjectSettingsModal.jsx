@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Copy, Trash2, Search, Check, UserPlus } from 'lucide-react';
+import { X, Copy, Trash2, Search, Check, UserPlus, UserMinus } from 'lucide-react';
 import { projectsApi, usersApi } from '../api/supabase';
 import Avatar from './Avatar';
 
@@ -20,7 +20,9 @@ export default function ProjectSettingsModal({ project, currentUserId, onClose, 
   const [members, setMembers]   = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [search, setSearch]     = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const [inviting, setInviting] = useState(null);
+  const [removing, setRemoving] = useState(null);
   const [duplicating, setDuplicating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteAnswer, setDeleteAnswer]   = useState('');
@@ -72,8 +74,19 @@ export default function ProjectSettingsModal({ project, currentUserId, onClose, 
       const { data } = await projectsApi.members(project.projectId);
       setMembers(data.members);
       setSearch('');
+      setSearchFocused(false);
     } finally {
       setInviting(null);
+    }
+  };
+
+  const handleRemoveMember = async (userId) => {
+    setRemoving(userId);
+    try {
+      await projectsApi.removeMember(project.projectId, userId);
+      setMembers((prev) => prev.filter((m) => m.userId !== userId));
+    } finally {
+      setRemoving(null);
     }
   };
 
@@ -160,9 +173,9 @@ export default function ProjectSettingsModal({ project, currentUserId, onClose, 
 
               {/* Current members */}
               {members.length > 0 && (
-                <div className="space-y-1 mb-3">
+                <div className="space-y-0.5 mb-3">
                   {members.map((m) => (
-                    <div key={m.userId} className="flex items-center gap-2.5 py-1.5 px-1">
+                    <div key={m.userId} className="flex items-center gap-2.5 py-1.5 px-1 group/member rounded-lg hover:bg-app-bg transition">
                       <Avatar name={m.name} color={m.avatar_color} size="sm" />
                       <span className="text-sm text-slate-300 flex-1 truncate">{m.name}</span>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${
@@ -174,6 +187,19 @@ export default function ProjectSettingsModal({ project, currentUserId, onClose, 
                       }`}>
                         {m.role === 'owner' ? 'Owner' : m.status === 'pending' ? 'Pending…' : 'Member'}
                       </span>
+                      {m.role !== 'owner' && (
+                        <button
+                          onClick={() => handleRemoveMember(m.userId)}
+                          disabled={removing === m.userId}
+                          className="opacity-0 group-hover/member:opacity-100 text-slate-600 hover:text-red-400 transition p-0.5 rounded flex-shrink-0 disabled:opacity-40"
+                          title="Remove from project"
+                        >
+                          {removing === m.userId
+                            ? <span className="text-[10px]">…</span>
+                            : <UserMinus size={13} />
+                          }
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -185,15 +211,17 @@ export default function ProjectSettingsModal({ project, currentUserId, onClose, 
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
                   placeholder="Search users to invite…"
                   className="w-full bg-app-bg border border-app-border rounded-lg pl-8 pr-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent transition"
                 />
               </div>
 
-              {search.trim() && (
+              {(searchFocused || search.trim()) && (
                 filteredUsers.length > 0 ? (
                   <div className="bg-app-bg border border-app-border rounded-lg overflow-hidden">
-                    {filteredUsers.slice(0, 5).map((u) => (
+                    {filteredUsers.slice(0, 8).map((u) => (
                       <div key={u.userId} className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-app-card transition">
                         <Avatar name={u.name} color={u.avatar_color} size="sm" />
                         <span className="text-sm text-slate-300 flex-1 truncate">{u.name}</span>
