@@ -58,12 +58,12 @@ export default function TaskCard({
     setEditingDate(false);
   };
 
-  const cardCls  = density === 'dense'      ? 'p-2 mb-1 rounded-md'
-                 : density === 'compact'    ? 'p-2.5 mb-1.5 rounded-lg'
+  const cardCls  = density === 'dense'      ? 'p-1.5 mb-0.5 rounded'
+                 : density === 'compact'    ? 'p-2 mb-1 rounded-md'
                  : 'p-3.5 mb-2 rounded-xl';
-  const titleGap = density === 'comfortable' ? 'mb-3' : 'mb-1.5';
-  const titleSz  = density === 'dense'       ? 'text-xs' : 'text-sm';
-  const iconSz   = density === 'dense'       ? 14 : 16;
+  const titleGap = density === 'comfortable' ? 'mb-3' : density === 'compact' ? 'mb-1.5' : 'mb-0';
+  const titleSz  = density === 'comfortable' ? 'text-sm' : 'text-xs';
+  const iconSz   = density === 'comfortable' ? 16 : 14;
 
   return (
     <div
@@ -145,34 +145,38 @@ export default function TaskCard({
         )}
       </div>
 
-      {/* Subtask progress — comfortable only */}
-      {density === 'comfortable' && task.subtasks_total > 0 && (
-        <div className="mb-2.5">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-slate-500">
-              {task.subtasks_completed}/{task.subtasks_total} subtasks
-            </span>
-            <span className="text-[10px] text-slate-500">
-              {Math.round((task.subtasks_completed / task.subtasks_total) * 100)}%
-            </span>
+      {/* Subtask progress */}
+      {task.subtasks_total > 0 && (() => {
+        const pct = Math.round((task.subtasks_completed / task.subtasks_total) * 100);
+        if (density === 'comfortable') return (
+          <div className="mb-2.5">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-slate-500">{task.subtasks_completed}/{task.subtasks_total} subtasks</span>
+              <span className="text-[10px] text-slate-500">{pct}%</span>
+            </div>
+            <div className="h-1 bg-app-border rounded-full overflow-hidden">
+              <div className="h-full bg-brand-accent rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+            </div>
           </div>
-          <div className="h-1 bg-app-border rounded-full overflow-hidden">
-            <div
-              className="h-full bg-brand-accent rounded-full transition-all duration-300"
-              style={{ width: `${(task.subtasks_completed / task.subtasks_total) * 100}%` }}
-            />
+        );
+        if (density === 'compact') return (
+          <div className="mb-1.5 flex items-center gap-1.5">
+            <div className="flex-1 h-0.5 bg-app-border rounded-full overflow-hidden">
+              <div className="h-full bg-brand-accent rounded-full" style={{ width: `${pct}%` }} />
+            </div>
+            <span className="text-[9px] text-slate-500 flex-shrink-0">{task.subtasks_completed}/{task.subtasks_total} · {pct}%</span>
           </div>
-        </div>
-      )}
-
-      {/* Compact subtask count badge — compact only */}
-      {density === 'compact' && task.subtasks_total > 0 && (
-        <div className="mb-1.5">
-          <span className="text-[10px] text-slate-500">
-            {task.subtasks_completed}/{task.subtasks_total} subtasks
-          </span>
-        </div>
-      )}
+        );
+        // dense
+        return (
+          <div className="mt-1 flex items-center gap-1">
+            <div className="flex-1 h-0.5 bg-app-border rounded-full overflow-hidden">
+              <div className="h-full bg-brand-accent rounded-full" style={{ width: `${pct}%` }} />
+            </div>
+            <span className="text-[9px] text-slate-500 flex-shrink-0">{pct}%</span>
+          </div>
+        );
+      })()}
 
       {/* Completed date — comfortable only */}
       {density === 'comfortable' && isDone && task.completed_at && (
@@ -184,50 +188,49 @@ export default function TaskCard({
         </div>
       )}
 
-      {/* Footer */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
-          <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${priority.cls}`}>
-            {density === 'dense' ? priority.label[0] : priority.label}
-          </span>
-          {density === 'comfortable' && formatDuration(task.duration_minutes) && (
-            <span className="flex items-center gap-0.5 text-xs text-slate-500 bg-app-bg border border-app-border px-1.5 py-0.5 rounded-full">
-              <Clock size={9} />
-              {formatDuration(task.duration_minutes)}
+      {/* Footer — hidden on dense */}
+      {density !== 'dense' && (
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${priority.cls}`}>
+              {density === 'compact' ? priority.label[0] : priority.label}
             </span>
-          )}
-        </div>
+            {density === 'comfortable' && formatDuration(task.duration_minutes) && (
+              <span className="flex items-center gap-0.5 text-xs text-slate-500 bg-app-bg border border-app-border px-1.5 py-0.5 rounded-full">
+                <Clock size={9} />
+                {formatDuration(task.duration_minutes)}
+              </span>
+            )}
+          </div>
 
-        <div className="flex items-center gap-1.5">
-          {editingDate ? (
-            <input
-              autoFocus
-              type="date"
-              defaultValue={task.due_date ? task.due_date.slice(0, 10) : ''}
-              onChange={handleDateChange}
-              onBlur={() => setEditingDate(false)}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-app-bg border border-brand-accent rounded px-1.5 py-0.5 text-xs text-slate-300 [color-scheme:dark] w-30 focus:outline-none"
-            />
-          ) : (
-            <button
-              onClick={handleDateClick}
-              className={`flex items-center gap-1 text-xs rounded px-1 py-0.5 transition
-                ${isOverdue ? 'text-red-400 hover:bg-red-400/10' : dueDate ? 'text-slate-500 hover:text-slate-300 hover:bg-app-sidebar' : 'text-slate-700 hover:text-slate-500 hover:bg-app-sidebar'}`}
-              title={onDueDateChange ? 'Click to change due date' : undefined}
-            >
-              <Calendar size={11} />
-              {dueDate
-                ? format(dueDate, density === 'dense' ? 'MMM d' : 'MMM d')
-                : <span className="opacity-0 group-hover:opacity-100">Add date</span>
-              }
-            </button>
-          )}
-          {density !== 'dense' && assignee && (
-            <Avatar name={assignee.name} color={assignee.avatar_color} size="xs" />
-          )}
+          <div className="flex items-center gap-1.5">
+            {editingDate ? (
+              <input
+                autoFocus
+                type="date"
+                defaultValue={task.due_date ? task.due_date.slice(0, 10) : ''}
+                onChange={handleDateChange}
+                onBlur={() => setEditingDate(false)}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-app-bg border border-brand-accent rounded px-1.5 py-0.5 text-xs text-slate-300 [color-scheme:dark] w-30 focus:outline-none"
+              />
+            ) : (
+              <button
+                onClick={handleDateClick}
+                className={`flex items-center gap-1 text-xs rounded px-1 py-0.5 transition
+                  ${isOverdue ? 'text-red-400 hover:bg-red-400/10' : dueDate ? 'text-slate-500 hover:text-slate-300 hover:bg-app-sidebar' : 'text-slate-700 hover:text-slate-500 hover:bg-app-sidebar'}`}
+                title={onDueDateChange ? 'Click to change due date' : undefined}
+              >
+                <Calendar size={11} />
+                {dueDate ? format(dueDate, 'MMM d') : <span className="opacity-0 group-hover:opacity-100">Add date</span>}
+              </button>
+            )}
+            {density === 'comfortable' && assignee && (
+              <Avatar name={assignee.name} color={assignee.avatar_color} size="xs" />
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

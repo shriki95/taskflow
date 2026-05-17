@@ -65,7 +65,7 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange, allG
 
   const IconComponent = STATUS_ICON[task.status] || STATUS_ICON.todo;
 
-  const rowPy   = density === 'dense' ? 'py-1.5' : density === 'compact' ? 'py-2' : 'py-3';
+  const rowPy   = density === 'dense' ? 'py-1' : density === 'compact' ? 'py-1.5' : 'py-3';
   const textSz  = density === 'dense' ? 'text-xs' : 'text-sm';
   const iconSz  = density === 'dense' ? 14 : 16;
 
@@ -409,7 +409,7 @@ export default function ListView({
     <div className="bg-app-card border border-app-border rounded-xl overflow-hidden">
       {/* Header */}
       {(() => {
-        const hdrPy = density === 'dense' ? 'py-1.5' : density === 'compact' ? 'py-2' : 'py-3';
+        const hdrPy = density === 'dense' ? 'py-1' : density === 'compact' ? 'py-1.5' : 'py-3';
         return (
           <div className="flex items-center border-b border-app-border">
             <div className={`${COL.status} ${hdrPy}`} />
