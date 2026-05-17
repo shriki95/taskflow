@@ -80,14 +80,14 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange, allG
         </button>
       </div>
 
-      <div className={`${COL.title} py-3`}>
-        <span
-          dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-          className={`text-sm font-medium ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
-        >
+      <div
+        className={`${COL.title} py-3 flex flex-col ${isRTL(task.title) ? 'items-end text-right' : 'items-start'}`}
+        dir={isRTL(task.title) ? 'rtl' : 'ltr'}
+      >
+        <span className={`text-sm font-medium truncate w-full ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}>
           {task.title}
         </span>
-        <span className={`sm:hidden inline-flex mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${priority.cls}`}>
+        <span className={`sm:hidden mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${priority.cls}`}>
           {priority.label}
         </span>
       </div>
@@ -177,11 +177,12 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange, allG
 }
 
 function SectionHeaderRow({ label, count, dot }) {
+  const rtl = isRTL(label);
   return (
-    <div className="pt-5 pb-2 pl-4">
-      <div className="flex items-center gap-2">
-        <span className={`w-2 h-2 rounded-full ${dot}`} />
-        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{label}</span>
+    <div className="pt-5 pb-2 px-4">
+      <div className={`flex items-center gap-2 ${rtl ? 'flex-row-reverse' : ''}`}>
+        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider" dir={rtl ? 'rtl' : 'ltr'}>{label}</span>
         <span className="text-xs text-slate-600 bg-app-card border border-app-border rounded-full px-1.5">
           {count}
         </span>
@@ -200,9 +201,10 @@ function GroupSectionHeader({ group, taskCount, onRename, onDelete, onAddTask, d
     else setName(group.name);
   };
 
+  const rtl = isRTL(group.name);
   return (
-    <div className="pt-5 pb-1 pl-2 pr-4">
-      <div className="flex items-center gap-2 group/hdr">
+    <div className="pt-5 pb-1 px-4">
+      <div className={`flex items-center gap-2 group/hdr ${rtl ? 'flex-row-reverse' : ''}`}>
         {dragHandleProps && (
           <button
             {...dragHandleProps}
@@ -217,18 +219,19 @@ function GroupSectionHeader({ group, taskCount, onRename, onDelete, onAddTask, d
           <input
             autoFocus
             value={name}
+            dir={rtl ? 'rtl' : 'ltr'}
             onChange={(e) => setName(e.target.value)}
             onBlur={commitRename}
             onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') { setEditing(false); setName(group.name); } }}
             className="text-xs font-bold text-slate-200 uppercase tracking-wider bg-transparent border-b border-brand-accent focus:outline-none w-40"
           />
         ) : (
-          <button onClick={() => setEditing(true)} className="text-xs font-bold text-slate-400 uppercase tracking-wider hover:text-slate-200 transition">
+          <button onClick={() => setEditing(true)} dir={rtl ? 'rtl' : 'ltr'} className="text-xs font-bold text-slate-400 uppercase tracking-wider hover:text-slate-200 transition">
             {group.name}
           </button>
         )}
         <span className="text-xs text-slate-600 bg-app-card border border-app-border rounded-full px-1.5">{taskCount}</span>
-        <div className="opacity-0 group-hover/hdr:opacity-100 flex items-center gap-1 ml-auto transition">
+        <div className={`opacity-0 group-hover/hdr:opacity-100 flex items-center gap-1 ${rtl ? 'mr-auto' : 'ml-auto'} transition`}>
           <button
             onClick={() => onAddTask(group.groupId)}
             className="text-slate-600 hover:text-slate-300 p-1 rounded hover:bg-app-card transition"
