@@ -45,7 +45,7 @@ function computeMultiDayLayout(multiDaySpans, weekDays) {
   return positioned;
 }
 
-function SingleDayBlock({ task, members, onClick, onStatusChange }) {
+function SingleDayBlock({ task, members, onClick, onStatusChange, highlighted }) {
   const isDone   = task.status === 'done';
   const assignee = members.find((m) => m.userId === task.assignee_id);
   const height   = blockHeight(task.duration_minutes);
@@ -54,6 +54,7 @@ function SingleDayBlock({ task, members, onClick, onStatusChange }) {
   return (
     <div
       draggable
+      data-task-id={task.taskId}
       onDragStart={(e) => { e.stopPropagation(); e.dataTransfer.setData('taskId', task.taskId); e.dataTransfer.effectAllowed = 'move'; }}
       onClick={() => onClick(task)}
       style={{ minHeight: `${height}px` }}
@@ -62,7 +63,8 @@ function SingleDayBlock({ task, members, onClick, onStatusChange }) {
         ${PRIORITY_BORDER[task.priority] || 'border-l-slate-500'}
         ${PRIORITY_BG[task.priority] || ''}
         bg-app-sidebar border border-app-border
-        ${isDone ? 'opacity-50' : ''}`}
+        ${isDone ? 'opacity-50' : ''}
+        ${highlighted ? 'ring-2 ring-brand-accent ring-inset' : ''}`}
     >
       <div className="flex items-start gap-1 min-w-0">
         <button
@@ -111,9 +113,10 @@ function SingleDayBlock({ task, members, onClick, onStatusChange }) {
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export default function WeekView({ tasks, members, onTaskClick, onStatusChange, initialDate, onDayClick, onDueDateChange, showHolidays, onToggleHolidays }) {
+export default function WeekView({ tasks, members, onTaskClick, onStatusChange, initialDate, onDayClick, onDueDateChange, onTasksReorder, showHolidays, onToggleHolidays }) {
   const [current, setCurrent]   = useState(initialDate || new Date());
   const [dragOver, setDragOver] = useState(null);
+  const [dragOverTask, setDragOverTask] = useState(null);
 
   const weekStart = startOfWeek(current, { weekStartsOn: 0 });
   const weekEnd   = endOfWeek(current, { weekStartsOn: 0 });
@@ -133,10 +136,26 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
   const handleDrop = (e, day) => {
     e.preventDefault();
     setDragOver(null);
+    setDragOverTask(null);
     const taskId = e.dataTransfer.getData('taskId');
-    if (taskId && onDueDateChange) {
-      onDueDateChange(taskId, format(day, 'yyyy-MM-dd'));
+    if (!taskId) return;
+    const targetEl = e.target.closest('[data-task-id]');
+    if (targetEl && targetEl.dataset.taskId !== taskId) {
+      const targetTaskId = targetEl.dataset.taskId;
+      const dayStr = format(day, 'yyyy-MM-dd');
+      const draggedTask = tasks.find((t) => t.taskId === taskId);
+      if (draggedTask?.due_date?.slice(0, 10) === dayStr) {
+        const dayTasks = singleTasksForDay(day);
+        const from = dayTasks.findIndex((t) => t.taskId === taskId);
+        const to   = dayTasks.findIndex((t) => t.taskId === targetTaskId);
+        if (from !== -1 && to !== -1 && from !== to && onTasksReorder) {
+          const r = [...dayTasks]; const [m] = r.splice(from, 1); r.splice(to, 0, m);
+          onTasksReorder(r.map((t) => t.taskId));
+        }
+        return;
+      }
     }
+    if (onDueDateChange) onDueDateChange(taskId, format(day, 'yyyy-MM-dd'));
   };
 
   // Single unified grid:
@@ -269,8 +288,8 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
               <div
                 key={col}
                 style={{ gridColumn: col + 1, gridRow: DAY_ROW }}
-                onDragOver={(e) => { e.preventDefault(); setDragOver(isoDay); }}
-                onDragLeave={() => setDragOver(null)}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(isoDay); const t = e.target.closest('[data-task-id]'); setDragOverTask(t ? t.dataset.taskId : null); }}
+                onDragLeave={() => { setDragOver(null); setDragOverTask(null); }}
                 onDrop={(e) => handleDrop(e, day)}
                 className={`flex flex-col p-2 transition-colors
                   ${col > 0 ? 'border-l border-app-border' : ''}
@@ -288,6 +307,7 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
                       members={members}
                       onClick={onTaskClick}
                       onStatusChange={onStatusChange}
+                      highlighted={dragOverTask === task.taskId}
                     />
                   ))
                 )}

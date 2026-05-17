@@ -461,6 +461,7 @@ export default function ProjectPage() {
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
                 onDueDateChange={handleDueDateChange}
+                onTasksReorder={handleTasksReorder}
                 onDayClick={handleDayClick}
                 showHolidays={showHolidays}
                 onToggleHolidays={handleToggleHolidays}
@@ -474,6 +475,7 @@ export default function ProjectPage() {
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
                 onDueDateChange={handleDueDateChange}
+                onTasksReorder={handleTasksReorder}
                 initialDate={calNavDate}
                 onDayClick={handleDayClick}
                 showHolidays={showHolidays}
@@ -487,6 +489,7 @@ export default function ProjectPage() {
                 members={members}
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
+                onTasksReorder={handleTasksReorder}
                 initialDate={calNavDate}
                 showHolidays={showHolidays}
                 onToggleHolidays={handleToggleHolidays}

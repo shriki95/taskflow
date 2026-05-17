@@ -22,7 +22,7 @@ function getTaskSpan(task) {
   return Array.from({ length: task.span_days }, (_, i) => addDays(start, i));
 }
 
-function DayTaskBlock({ task, members, onClick, onStatusChange }) {
+function DayTaskBlock({ task, members, onClick, onStatusChange, highlighted }) {
   const isDone = task.status === 'done';
   const assignee = members.find((m) => m.userId === task.assignee_id);
   const height = blockHeight(task.duration_minutes);
@@ -32,11 +32,15 @@ function DayTaskBlock({ task, members, onClick, onStatusChange }) {
 
   return (
     <div
+      draggable
+      data-task-id={task.taskId}
+      onDragStart={(e) => { e.dataTransfer.setData('taskId', task.taskId); e.dataTransfer.effectAllowed = 'move'; }}
       onClick={onClick}
       style={{ minHeight: `${height}px` }}
-      className={`flex flex-col gap-1 px-4 py-3 cursor-pointer rounded-xl border border-app-border
+      className={`flex flex-col gap-1 px-4 py-3 cursor-grab active:cursor-grabbing rounded-xl border border-app-border
         border-l-4 ${pb} ${bg} hover:bg-app-card/70 transition
-        ${isDone ? 'opacity-60' : ''}`}
+        ${isDone ? 'opacity-60' : ''}
+        ${highlighted ? 'ring-2 ring-brand-accent ring-inset' : ''}`}
     >
       {/* Top row */}
       <div className="flex items-start gap-2.5">
@@ -87,8 +91,9 @@ function DayTaskBlock({ task, members, onClick, onStatusChange }) {
   );
 }
 
-export default function DayView({ tasks, members, onTaskClick, onStatusChange, initialDate, showHolidays, onToggleHolidays }) {
+export default function DayView({ tasks, members, onTaskClick, onStatusChange, initialDate, onTasksReorder, showHolidays, onToggleHolidays }) {
   const [current, setCurrent] = useState(initialDate || new Date());
+  const [dragOverTask, setDragOverTask] = useState(null);
 
   const dayTasks = tasks.filter((t) => {
     if (!t.due_date) return false;
@@ -165,7 +170,26 @@ export default function DayView({ tasks, members, onTaskClick, onStatusChange, i
       })()}
 
       {/* Tasks */}
-      <div className="flex-1 overflow-auto">
+      <div
+        className="flex-1 overflow-auto"
+        onDragOver={(e) => { e.preventDefault(); const t = e.target.closest('[data-task-id]'); setDragOverTask(t ? t.dataset.taskId : null); }}
+        onDragLeave={() => setDragOverTask(null)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOverTask(null);
+          const taskId = e.dataTransfer.getData('taskId');
+          if (!taskId) return;
+          const targetEl = e.target.closest('[data-task-id]');
+          if (targetEl && targetEl.dataset.taskId !== taskId && onTasksReorder) {
+            const from = dayTasks.findIndex((t) => t.taskId === taskId);
+            const to   = dayTasks.findIndex((t) => t.taskId === targetEl.dataset.taskId);
+            if (from !== -1 && to !== -1 && from !== to) {
+              const r = [...dayTasks]; const [m] = r.splice(from, 1); r.splice(to, 0, m);
+              onTasksReorder(r.map((t) => t.taskId));
+            }
+          }
+        }}
+      >
         {dayTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 gap-3 text-slate-600">
             <Calendar size={36} className="opacity-30" />
@@ -180,6 +204,7 @@ export default function DayView({ tasks, members, onTaskClick, onStatusChange, i
                 members={members}
                 onClick={() => onTaskClick(task)}
                 onStatusChange={onStatusChange}
+                highlighted={dragOverTask === task.taskId}
               />
             ))}
           </div>

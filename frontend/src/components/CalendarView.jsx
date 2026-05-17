@@ -40,18 +40,20 @@ function computeWeekSpanLayout(multiDaySpans, weekDays) {
   return positioned;
 }
 
-function TaskChip({ task, onClick, onStatusChange, compact = false }) {
+function TaskChip({ task, onClick, onStatusChange, compact = false, highlighted = false }) {
   const isDone = task.status === 'done';
   const iconSize = compact ? 8 : 10;
   return (
     <div
       draggable
+      data-task-id={task.taskId}
       onDragStart={(e) => { e.stopPropagation(); e.dataTransfer.setData('taskId', task.taskId); e.dataTransfer.effectAllowed = 'move'; }}
       onClick={(e) => { e.stopPropagation(); onClick(task); }}
       className={`flex items-center gap-0.5 px-1 rounded cursor-grab active:cursor-grabbing
         hover:opacity-80 transition
         ${compact ? 'py-px mb-px text-[9px]' : 'py-0.5 mb-0.5 text-xs'}
         ${isDone ? 'opacity-50' : ''}
+        ${highlighted ? 'ring-2 ring-brand-accent ring-inset' : ''}
         bg-app-sidebar border border-app-border`}
     >
       <button
@@ -108,10 +110,11 @@ function SpanChip({ task, onTaskClick, onStatusChange, startsThisWeek, endsThisW
   );
 }
 
-export default function CalendarView({ tasks, members, onTaskClick, onStatusChange, onDayClick, onDueDateChange, showHolidays, onToggleHolidays }) {
+export default function CalendarView({ tasks, members, onTaskClick, onStatusChange, onDayClick, onDueDateChange, onTasksReorder, showHolidays, onToggleHolidays }) {
   const [current, setCurrent]   = useState(new Date());
   const [popover, setPopover]   = useState(null);
   const [dragOver, setDragOver] = useState(null);
+  const [dragOverTask, setDragOverTask] = useState(null);
   const [lpDay, setLpDay]       = useState(null);
   const hideTimer = useRef(null);
   const lpRef     = useRef({ timer: null, fired: false });
@@ -156,11 +159,27 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
   const handleDrop = useCallback((e, day) => {
     e.preventDefault();
     setDragOver(null);
+    setDragOverTask(null);
     const taskId = e.dataTransfer.getData('taskId');
-    if (taskId && onDueDateChange) {
-      onDueDateChange(taskId, format(day, 'yyyy-MM-dd'));
+    if (!taskId) return;
+    const targetEl = e.target.closest('[data-task-id]');
+    if (targetEl && targetEl.dataset.taskId !== taskId) {
+      const targetTaskId = targetEl.dataset.taskId;
+      const dayStr = format(day, 'yyyy-MM-dd');
+      const draggedTask = tasks.find((t) => t.taskId === taskId);
+      if (draggedTask?.due_date?.slice(0, 10) === dayStr) {
+        const dayTasks = singleTasksForDay(day);
+        const from = dayTasks.findIndex((t) => t.taskId === taskId);
+        const to   = dayTasks.findIndex((t) => t.taskId === targetTaskId);
+        if (from !== -1 && to !== -1 && from !== to && onTasksReorder) {
+          const r = [...dayTasks]; const [m] = r.splice(from, 1); r.splice(to, 0, m);
+          onTasksReorder(r.map((t) => t.taskId));
+        }
+        return;
+      }
     }
-  }, [onDueDateChange]);
+    if (onDueDateChange) onDueDateChange(taskId, format(day, 'yyyy-MM-dd'));
+  }, [onDueDateChange, onTasksReorder, tasks, singleTasksForDay]);
 
   const WEEKDAYS       = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const WEEKDAYS_SHORT = ['S',   'M',   'T',   'W',   'T',   'F',   'S'  ];
@@ -293,8 +312,8 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                       onTouchStart={() => startLp(day)}
                       onTouchEnd={cancelLp}
                       onTouchMove={cancelLp}
-                      onDragOver={(e) => { e.preventDefault(); setDragOver(isoDay); }}
-                      onDragLeave={() => setDragOver(null)}
+                      onDragOver={(e) => { e.preventDefault(); setDragOver(isoDay); const t = e.target.closest('[data-task-id]'); setDragOverTask(t ? t.dataset.taskId : null); }}
+                      onDragLeave={() => { setDragOver(null); setDragOverTask(null); }}
                       onDrop={(e) => handleDrop(e, day)}
                       className={`p-1 cursor-pointer overflow-hidden transition-colors select-none
                         ${col > 0 ? 'border-l border-app-border' : ''}
@@ -302,7 +321,7 @@ export default function CalendarView({ tasks, members, onTaskClick, onStatusChan
                         ${isOver ? 'bg-brand-accent/10' : todayFlag ? '!bg-brand-accent/5' : 'bg-app-bg hover:bg-app-card/40'}`}
                     >
                       {visible.map((task) => (
-                        <TaskChip key={`${task.taskId}-${isoDay}`} task={task} onClick={onTaskClick} onStatusChange={onStatusChange} compact={compact} />
+                        <TaskChip key={`${task.taskId}-${isoDay}`} task={task} onClick={onTaskClick} onStatusChange={onStatusChange} compact={compact} highlighted={dragOverTask === task.taskId} />
                       ))}
                       {overflow > 0 && (
                         <button
