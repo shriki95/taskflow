@@ -58,6 +58,19 @@ function DayTaskBlock({ task, members, onClick, onStatusChange }) {
         <Flag size={12} className={`flex-shrink-0 mt-0.5 ${PRIORITY_COLOR[task.priority] || 'text-slate-600'}`} />
       </div>
 
+      {/* Subtask progress */}
+      {task.subtasks_total > 0 && (() => {
+        const pct = Math.round((task.subtasks_completed / task.subtasks_total) * 100);
+        return (
+          <div className="pl-7 flex items-center gap-2 mt-1">
+            <div className="flex-1 h-1 bg-app-border rounded-full overflow-hidden">
+              <div className="h-full bg-brand-accent rounded-full transition-all" style={{ width: `${pct}%` }} />
+            </div>
+            <span className="text-[10px] text-slate-500 flex-shrink-0">{task.subtasks_completed}/{task.subtasks_total} · {pct}%</span>
+          </div>
+        );
+      })()}
+
       {/* Duration + assignee */}
       {(durLabel || assignee) && (
         <div className="flex items-center gap-3 pl-7 mt-auto pt-1">

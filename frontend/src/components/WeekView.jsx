@@ -80,6 +80,17 @@ function SingleDayBlock({ task, members, onClick, onStatusChange }) {
           {task.title}
         </span>
       </div>
+      {task.subtasks_total > 0 && (() => {
+        const pct = Math.round((task.subtasks_completed / task.subtasks_total) * 100);
+        return (
+          <div className="flex items-center gap-1 mt-0.5">
+            <div className="flex-1 h-0.5 bg-app-border rounded-full overflow-hidden">
+              <div className="h-full bg-brand-accent rounded-full" style={{ width: `${pct}%` }} />
+            </div>
+            <span className="text-[8px] text-slate-500 flex-shrink-0">{pct}%</span>
+          </div>
+        );
+      })()}
       {height >= 72 && (
         <div className="flex items-center gap-1 mt-auto">
           <span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_BAR[task.priority] || 'bg-slate-500'}`} />
