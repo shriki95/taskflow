@@ -16,6 +16,42 @@ import TaskDetail from '../components/TaskDetail';
 import CreateTaskModal from '../components/CreateTaskModal';
 import EditProjectModal from '../components/EditProjectModal';
 
+const DENSITY_LEVELS = [
+  {
+    id: 'comfortable', label: 'Comfortable',
+    icon: (
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor">
+        <rect x="0" y="0"  width="13" height="3"   rx="1.5"/>
+        <rect x="0" y="5"  width="13" height="3"   rx="1.5"/>
+        <rect x="0" y="10" width="13" height="3"   rx="1.5"/>
+      </svg>
+    ),
+  },
+  {
+    id: 'compact', label: 'Compact',
+    icon: (
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor">
+        <rect x="0" y="0"    width="13" height="2"   rx="1"/>
+        <rect x="0" y="3.67" width="13" height="2"   rx="1"/>
+        <rect x="0" y="7.34" width="13" height="2"   rx="1"/>
+        <rect x="0" y="11"   width="13" height="2"   rx="1"/>
+      </svg>
+    ),
+  },
+  {
+    id: 'dense', label: 'Dense',
+    icon: (
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor">
+        <rect x="0" y="0"    width="13" height="1.5" rx="0.75"/>
+        <rect x="0" y="2.87" width="13" height="1.5" rx="0.75"/>
+        <rect x="0" y="5.75" width="13" height="1.5" rx="0.75"/>
+        <rect x="0" y="8.62" width="13" height="1.5" rx="0.75"/>
+        <rect x="0" y="11.5" width="13" height="1.5" rx="0.75"/>
+      </svg>
+    ),
+  },
+];
+
 export default function ProjectPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -33,9 +69,17 @@ export default function ProjectPage() {
   const [showEditProject, setShowEditProject] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [density, setDensity] = useState(() => {
+    try { return localStorage.getItem('tf-density') || 'comfortable'; } catch { return 'comfortable'; }
+  });
   const [showHolidays, setShowHolidays] = useState(() => {
     try { return localStorage.getItem('tf-show-holidays') === 'true'; } catch { return false; }
   });
+
+  const handleDensityChange = useCallback((d) => {
+    setDensity(d);
+    try { localStorage.setItem('tf-density', d); } catch {}
+  }, []);
 
   const handleToggleHolidays = useCallback(() => {
     setShowHolidays((v) => {
@@ -266,6 +310,26 @@ export default function ProjectPage() {
               </div>
             )}
 
+            {/* Density control — only on board / list */}
+            {(view === 'board' || view === 'list') && (
+              <div className="hidden sm:flex bg-app-bg border border-app-border rounded-lg p-0.5 sm:p-1">
+                {DENSITY_LEVELS.map(({ id, icon, label }) => (
+                  <button
+                    key={id}
+                    onClick={() => handleDensityChange(id)}
+                    title={label}
+                    className={`p-1.5 rounded-md transition ${
+                      density === id
+                        ? 'bg-brand-accent/20 text-brand-accent'
+                        : 'text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    {icon}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Members — hidden on mobile */}
             <div className="hidden sm:flex -space-x-2">
               {members.slice(0, 4).map((m) => (
@@ -320,6 +384,7 @@ export default function ProjectPage() {
                 onGroupDelete={handleGroupDelete}
                 onGroupReorder={handleGroupReorder}
                 onTaskDelete={handleTaskDeleteFromCard}
+                density={density}
               />
             )}
             {view === 'list' && (
@@ -337,6 +402,7 @@ export default function ProjectPage() {
                 onGroupReorder={handleGroupReorder}
                 onColumnChange={handleColumnChange}
                 onTaskDelete={handleTaskDeleteFromCard}
+                density={density}
               />
             )}
             {view === 'calendar' && (

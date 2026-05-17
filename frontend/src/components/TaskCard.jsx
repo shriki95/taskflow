@@ -20,6 +20,7 @@ export default function TaskCard({
   groups = [],
   onDelete,
   onMoveToGroup,
+  density = 'comfortable',
 }) {
   const [editingDate, setEditingDate] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -57,10 +58,18 @@ export default function TaskCard({
     setEditingDate(false);
   };
 
+  const cardCls  = density === 'dense'      ? 'p-2 mb-1 rounded-md'
+                 : density === 'compact'    ? 'p-2.5 mb-1.5 rounded-lg'
+                 : 'p-3.5 mb-2 rounded-xl';
+  const titleGap = density === 'comfortable' ? 'mb-3' : 'mb-1.5';
+  const titleSz  = density === 'dense'       ? 'text-xs' : 'text-sm';
+  const iconSz   = density === 'dense'       ? 14 : 16;
+
   return (
     <div
       onClick={onClick}
-      className={`bg-app-card border rounded-xl p-3.5 mb-2 cursor-pointer transition-all group select-none
+      className={`bg-app-card border cursor-pointer transition-all group select-none
+        ${cardCls}
         ${isDone ? 'opacity-60' : ''}
         ${dragging
           ? 'border-brand-accent shadow-lg shadow-brand-accent/20 rotate-1'
@@ -68,20 +77,20 @@ export default function TaskCard({
         }`}
     >
       {/* Title row with done toggle */}
-      <div className="flex items-start gap-2 mb-3">
+      <div className={`flex items-start gap-2 ${titleGap}`}>
         <button
           onClick={handleToggleDone}
           className="flex-shrink-0 mt-0.5 focus:outline-none"
           title={isDone ? 'Mark as to-do' : 'Mark as done'}
         >
           {isDone
-            ? <CheckCircle2 size={16} className="text-emerald-400" />
-            : <Circle size={16} className="text-slate-600 hover:text-slate-400 transition-colors" />
+            ? <CheckCircle2 size={iconSz} className="text-emerald-400" />
+            : <Circle size={iconSz} className="text-slate-600 hover:text-slate-400 transition-colors" />
           }
         </button>
         <p
           dir={isRTL(task.title) ? 'rtl' : 'ltr'}
-          className={`text-sm font-medium leading-snug group-hover:text-slate-100 flex-1
+          className={`${titleSz} font-medium leading-snug group-hover:text-slate-100 flex-1
             ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}
         >
           {task.title}
@@ -136,8 +145,8 @@ export default function TaskCard({
         )}
       </div>
 
-      {/* Subtask progress */}
-      {task.subtasks_total > 0 && (
+      {/* Subtask progress — comfortable only */}
+      {density === 'comfortable' && task.subtasks_total > 0 && (
         <div className="mb-2.5">
           <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] text-slate-500">
@@ -156,8 +165,17 @@ export default function TaskCard({
         </div>
       )}
 
-      {/* Completed date */}
-      {isDone && task.completed_at && (
+      {/* Compact subtask count badge — compact only */}
+      {density === 'compact' && task.subtasks_total > 0 && (
+        <div className="mb-1.5">
+          <span className="text-[10px] text-slate-500">
+            {task.subtasks_completed}/{task.subtasks_total} subtasks
+          </span>
+        </div>
+      )}
+
+      {/* Completed date — comfortable only */}
+      {density === 'comfortable' && isDone && task.completed_at && (
         <div className="flex items-center gap-1 mb-2.5">
           <CheckCircle2 size={10} className="text-emerald-500/70 flex-shrink-0" />
           <span className="text-[10px] text-emerald-600/80">
@@ -169,10 +187,10 @@ export default function TaskCard({
       {/* Footer */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
-          <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${priority.cls}`}>
-            {priority.label}
+          <span className={`text-xs px-1.5 py-0.5 rounded-full border font-medium ${priority.cls}`}>
+            {density === 'dense' ? priority.label[0] : priority.label}
           </span>
-          {formatDuration(task.duration_minutes) && (
+          {density === 'comfortable' && formatDuration(task.duration_minutes) && (
             <span className="flex items-center gap-0.5 text-xs text-slate-500 bg-app-bg border border-app-border px-1.5 py-0.5 rounded-full">
               <Clock size={9} />
               {formatDuration(task.duration_minutes)}
@@ -180,7 +198,7 @@ export default function TaskCard({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {editingDate ? (
             <input
               autoFocus
@@ -199,10 +217,13 @@ export default function TaskCard({
               title={onDueDateChange ? 'Click to change due date' : undefined}
             >
               <Calendar size={11} />
-              {dueDate ? format(dueDate, 'MMM d') : <span className="opacity-0 group-hover:opacity-100">Add date</span>}
+              {dueDate
+                ? format(dueDate, density === 'dense' ? 'MMM d' : 'MMM d')
+                : <span className="opacity-0 group-hover:opacity-100">Add date</span>
+              }
             </button>
           )}
-          {assignee && (
+          {density !== 'dense' && assignee && (
             <Avatar name={assignee.name} color={assignee.avatar_color} size="xs" />
           )}
         </div>

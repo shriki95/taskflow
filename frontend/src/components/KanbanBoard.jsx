@@ -28,7 +28,7 @@ const COL_COLORS = [
 // Prefix used to distinguish column sortable IDs from task IDs
 const COL_PREFIX = 'col-';
 
-function SortableCard({ task, members, onClick, onStatusChange, onDueDateChange, groups, onDelete, onMoveToGroup }) {
+function SortableCard({ task, members, onClick, onStatusChange, onDueDateChange, groups, onDelete, onMoveToGroup, density }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: task.taskId });
 
@@ -48,6 +48,7 @@ function SortableCard({ task, members, onClick, onStatusChange, onDueDateChange,
         groups={groups}
         onDelete={onDelete}
         onMoveToGroup={onMoveToGroup}
+        density={density}
       />
     </div>
   );
@@ -56,7 +57,7 @@ function SortableCard({ task, members, onClick, onStatusChange, onDueDateChange,
 function Column({
   col, tasks, members, colorIndex, onTaskClick, onAddTask, onStatusChange, onDueDateChange,
   onRename, onDelete, editable, deletable, dragHandleProps,
-  groups, onTaskDelete, onTaskMoveToGroup,
+  groups, onTaskDelete, onTaskMoveToGroup, density,
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id });
   const [editing, setEditing] = useState(false);
@@ -163,6 +164,7 @@ function Column({
               groups={groups}
               onDelete={onTaskDelete}
               onMoveToGroup={onTaskMoveToGroup}
+              density={density}
             />
           ))}
         </SortableContext>
@@ -268,7 +270,7 @@ function ColumnDragOverlay({ col, colorIndex }) {
   );
 }
 
-function CompletedSection({ tasks, members, onTaskClick, onRestore }) {
+function CompletedSection({ tasks, members, onTaskClick, onRestore, density }) {
   const [open, setOpen] = useState(false);
 
   const thisWeekCount = tasks.filter((t) => {
@@ -333,6 +335,7 @@ function CompletedSection({ tasks, members, onTaskClick, onRestore }) {
                 members={members}
                 onClick={() => onTaskClick(task)}
                 onStatusChange={onRestore}
+                density={density}
               />
               <button
                 onClick={(e) => { e.stopPropagation(); onRestore(task.taskId, 'todo'); }}
@@ -364,6 +367,7 @@ export default function KanbanBoard({
   onGroupDelete,
   onGroupReorder,
   onTaskDelete,
+  density = 'comfortable',
 }) {
   const [activeTask, setActiveTask] = useState(null);
   const [activeColumn, setActiveColumn] = useState(null);
@@ -483,6 +487,7 @@ export default function KanbanBoard({
               groups={groups}
               onTaskDelete={onTaskDelete}
               onTaskMoveToGroup={onColumnChange}
+              density={density}
             />
           )}
 
@@ -508,6 +513,7 @@ export default function KanbanBoard({
                 groups={groups}
                 onTaskDelete={onTaskDelete}
                 onTaskMoveToGroup={onColumnChange}
+                density={density}
               />
             ))}
           </SortableContext>
@@ -531,6 +537,7 @@ export default function KanbanBoard({
         members={members}
         onTaskClick={onTaskClick}
         onRestore={onStatusChange}
+        density={density}
       />
     </div>
   );

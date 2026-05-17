@@ -42,7 +42,7 @@ const COL = {
   menu:     'w-8 flex-shrink-0 pr-2 hidden sm:flex items-center justify-center',
 };
 
-function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange, allGroups = [], onDelete, onMoveToGroup }) {
+function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange, allGroups = [], onDelete, onMoveToGroup, density = 'comfortable' }) {
   const [editingDate, setEditingDate] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuContainerRef = useRef();
@@ -65,26 +65,30 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange, allG
 
   const IconComponent = STATUS_ICON[task.status] || STATUS_ICON.todo;
 
+  const rowPy   = density === 'dense' ? 'py-1.5' : density === 'compact' ? 'py-2' : 'py-3';
+  const textSz  = density === 'dense' ? 'text-xs' : 'text-sm';
+  const iconSz  = density === 'dense' ? 14 : 16;
+
   return (
     <div
       onClick={onClick}
       className="group flex items-center border-b border-app-border hover:bg-app-card/50 cursor-pointer transition-colors"
     >
-      <div className={`${COL.status} py-3`}>
+      <div className={`${COL.status} ${rowPy}`}>
         <button
           onClick={(e) => { e.stopPropagation(); if (onStatusChange) onStatusChange(task.taskId, isDone ? 'todo' : 'done'); }}
           className="focus:outline-none hover:opacity-70 transition-opacity"
           title={isDone ? 'Mark as to-do' : 'Mark as done'}
         >
-          <IconComponent />
+          <IconComponent size={iconSz} />
         </button>
       </div>
 
       <div
-        className={`${COL.title} py-3 flex flex-col ${isRTL(task.title) ? 'items-end text-right' : 'items-start'}`}
+        className={`${COL.title} ${rowPy} flex flex-col ${isRTL(task.title) ? 'items-end text-right' : 'items-start'}`}
         dir={isRTL(task.title) ? 'rtl' : 'ltr'}
       >
-        <span className={`text-sm font-medium truncate w-full ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}>
+        <span className={`${textSz} font-medium truncate w-full ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}>
           {task.title}
         </span>
         <span className={`sm:hidden mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${priority.cls}`}>
@@ -92,13 +96,13 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange, allG
         </span>
       </div>
 
-      <div className={`${COL.priority} py-3`}>
+      <div className={`${COL.priority} ${rowPy}`}>
         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priority.cls}`}>
           {priority.label}
         </span>
       </div>
 
-      <div className={`${COL.dueDate} py-3`} onClick={(e) => e.stopPropagation()}>
+      <div className={`${COL.dueDate} ${rowPy}`} onClick={(e) => e.stopPropagation()}>
         {editingDate ? (
           <input
             autoFocus
@@ -115,12 +119,15 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange, allG
               ${isOverdue ? 'text-red-400 hover:bg-red-400/10' : dueDate ? 'text-slate-500 hover:text-slate-300 hover:bg-app-sidebar' : 'text-slate-700 hover:text-slate-500 hover:bg-app-sidebar'}`}
           >
             <Calendar size={12} />
-            {dueDate ? format(dueDate, 'MMM d, yyyy') : <span className="opacity-0 group-hover:opacity-100">Add date</span>}
+            {dueDate
+              ? format(dueDate, density === 'dense' ? 'MMM d' : 'MMM d, yyyy')
+              : <span className="opacity-0 group-hover:opacity-100">Add date</span>
+            }
           </button>
         )}
       </div>
 
-      <div className={`${COL.assignee} py-3`}>
+      <div className={`${COL.assignee} ${rowPy}`}>
         {assignee
           ? <Avatar name={assignee.name} color={assignee.avatar_color} size="sm" />
           : <span className="text-slate-700 text-xs">—</span>
@@ -130,7 +137,7 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange, allG
       {showMenu && (
         <div
           ref={menuContainerRef}
-          className={`${COL.menu} py-3 relative`}
+          className={`${COL.menu} ${rowPy} relative`}
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -252,7 +259,7 @@ function GroupSectionHeader({ group, taskCount, onRename, onDelete, onAddTask, d
   );
 }
 
-function SortableGroupSection({ group, tasks, members, onTaskClick, onStatusChange, onDueDateChange, onRename, onDelete, onAddTask, allGroups, onTaskDelete, onColumnChange }) {
+function SortableGroupSection({ group, tasks, members, onTaskClick, onStatusChange, onDueDateChange, onRename, onDelete, onAddTask, allGroups, onTaskDelete, onColumnChange, density }) {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } =
     useSortable({ id: group.groupId });
 
@@ -280,6 +287,7 @@ function SortableGroupSection({ group, tasks, members, onTaskClick, onStatusChan
           allGroups={allGroups}
           onDelete={onTaskDelete}
           onMoveToGroup={onColumnChange}
+          density={density}
         />
       ))}
     </div>
@@ -289,7 +297,7 @@ function SortableGroupSection({ group, tasks, members, onTaskClick, onStatusChan
 export default function ListView({
   tasks, members, onTaskClick, onStatusChange, onDueDateChange, onAddTask,
   groups = [], onGroupCreate, onGroupUpdate, onGroupDelete, onGroupReorder,
-  onColumnChange, onTaskDelete,
+  onColumnChange, onTaskDelete, density = 'comfortable',
 }) {
   const [addingGroup, setAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
@@ -338,6 +346,7 @@ export default function ListView({
               allGroups={groups}
               onTaskDelete={onTaskDelete}
               onColumnChange={onColumnChange}
+              density={density}
             />
           );
         })}
@@ -367,6 +376,7 @@ export default function ListView({
                 allGroups={groups}
                 onDelete={onTaskDelete}
                 onMoveToGroup={onColumnChange}
+                density={density}
               />
             ))}
           </div>
@@ -389,6 +399,7 @@ export default function ListView({
             onStatusChange={onStatusChange}
             onDueDateChange={onDueDateChange}
             onDelete={onTaskDelete}
+            density={density}
           />
         )),
       ];
@@ -397,14 +408,19 @@ export default function ListView({
   return (
     <div className="bg-app-card border border-app-border rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center border-b border-app-border">
-        <div className={`${COL.status} py-3`} />
-        <div className={`${COL.title} py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider`}>Task</div>
-        <div className={`${COL.priority} py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider`}>Priority</div>
-        <div className={`${COL.dueDate} py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider`}>Due date</div>
-        <div className={`${COL.assignee} py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider`}>Assignee</div>
-        <div className={`${COL.menu} py-3`} />
-      </div>
+      {(() => {
+        const hdrPy = density === 'dense' ? 'py-1.5' : density === 'compact' ? 'py-2' : 'py-3';
+        return (
+          <div className="flex items-center border-b border-app-border">
+            <div className={`${COL.status} ${hdrPy}`} />
+            <div className={`${COL.title} ${hdrPy} text-xs font-semibold text-slate-500 uppercase tracking-wider`}>Task</div>
+            <div className={`${COL.priority} ${hdrPy} text-xs font-semibold text-slate-500 uppercase tracking-wider`}>Priority</div>
+            <div className={`${COL.dueDate} ${hdrPy} text-xs font-semibold text-slate-500 uppercase tracking-wider`}>Due date</div>
+            <div className={`${COL.assignee} ${hdrPy} text-xs font-semibold text-slate-500 uppercase tracking-wider`}>Assignee</div>
+            <div className={`${COL.menu} ${hdrPy}`} />
+          </div>
+        );
+      })()}
 
       {/* Content */}
       {hasGroups ? renderGroupContent() : renderStatusContent()}
