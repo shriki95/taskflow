@@ -71,10 +71,17 @@ export default function ProjectPage() {
   const [error, setError] = useState(null);
   const readDensity = (pId) => { try { return localStorage.getItem(`tf-density-${pId}`) || 'comfortable'; } catch { return 'comfortable'; } };
   const [density, setDensity] = useState(() => readDensity(projectId));
-  const [densityProjectId, setDensityProjectId] = useState(projectId);
-  if (densityProjectId !== projectId) {
-    setDensityProjectId(projectId);
+  const [trackedProjectId, setTrackedProjectId] = useState(projectId);
+  if (trackedProjectId !== projectId) {
+    setTrackedProjectId(projectId);
     setDensity(readDensity(projectId));
+    setLoading(true);
+    setTasks([]);
+    setGroups([]);
+    setMembers([]);
+    setProject(null);
+    setSelectedTask(null);
+    setError(null);
   }
   const [showHolidays, setShowHolidays] = useState(() => {
     try { return localStorage.getItem('tf-show-holidays') === 'true'; } catch { return false; }
