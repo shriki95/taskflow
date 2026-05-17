@@ -70,7 +70,7 @@ export default function ProjectPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [density, setDensity] = useState(() => {
-    try { return localStorage.getItem('tf-density') || 'comfortable'; } catch { return 'comfortable'; }
+    try { return localStorage.getItem(`tf-density-${projectId}`) || 'comfortable'; } catch { return 'comfortable'; }
   });
   const [showHolidays, setShowHolidays] = useState(() => {
     try { return localStorage.getItem('tf-show-holidays') === 'true'; } catch { return false; }
@@ -78,8 +78,8 @@ export default function ProjectPage() {
 
   const handleDensityChange = useCallback((d) => {
     setDensity(d);
-    try { localStorage.setItem('tf-density', d); } catch {}
-  }, []);
+    try { localStorage.setItem(`tf-density-${projectId}`, d); } catch {}
+  }, [projectId]);
 
   const handleToggleHolidays = useCallback(() => {
     setShowHolidays((v) => {
