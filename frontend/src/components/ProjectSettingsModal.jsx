@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Copy, Trash2, Search, Check, UserPlus, UserMinus } from 'lucide-react';
+import { X, Copy, Trash2, Search, Check, UserPlus, UserMinus, Clock } from 'lucide-react';
 import { projectsApi, usersApi } from '../api/supabase';
 import Avatar from './Avatar';
 
@@ -23,6 +23,7 @@ export default function ProjectSettingsModal({ project, currentUserId, onClose, 
   const [searchFocused, setSearchFocused] = useState(false);
   const [inviting, setInviting] = useState(null);
   const [removing, setRemoving] = useState(null);
+  const [confirmRemove, setConfirmRemove] = useState(null);
   const [duplicating, setDuplicating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteAnswer, setDeleteAnswer]   = useState('');
@@ -175,32 +176,57 @@ export default function ProjectSettingsModal({ project, currentUserId, onClose, 
               {members.length > 0 && (
                 <div className="space-y-0.5 mb-3">
                   {members.map((m) => (
-                    <div key={m.userId} className="flex items-center gap-2.5 py-1.5 px-1 group/member rounded-lg hover:bg-app-bg transition">
-                      <Avatar name={m.name} color={m.avatar_color} size="sm" />
-                      <span className="text-sm text-slate-300 flex-1 truncate">{m.name}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${
-                        m.role === 'owner'
-                          ? 'text-brand-accent bg-brand-accent/10'
-                          : m.status === 'pending'
-                            ? 'text-amber-400 bg-amber-400/10'
-                            : 'text-slate-500 bg-slate-700/40'
-                      }`}>
-                        {m.role === 'owner' ? 'Owner' : m.status === 'pending' ? 'Pending…' : 'Member'}
-                      </span>
-                      {m.role !== 'owner' && (
+                    confirmRemove?.userId === m.userId ? (
+                      /* Inline confirmation row */
+                      <div key={m.userId} className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2.5 flex items-center gap-2.5">
+                        <Avatar name={m.name} color={m.avatar_color} size="sm" />
+                        <p className="text-xs text-red-300 flex-1 leading-snug">
+                          Remove <span className="font-semibold">{m.name}</span> from this project?
+                        </p>
                         <button
-                          onClick={() => handleRemoveMember(m.userId)}
-                          disabled={removing === m.userId}
-                          className="opacity-0 group-hover/member:opacity-100 text-slate-600 hover:text-red-400 transition p-0.5 rounded flex-shrink-0 disabled:opacity-40"
-                          title="Remove from project"
+                          onClick={() => setConfirmRemove(null)}
+                          className="text-xs text-slate-400 hover:text-slate-200 px-2 py-1 rounded border border-app-border hover:bg-app-bg transition flex-shrink-0"
                         >
-                          {removing === m.userId
-                            ? <span className="text-[10px]">…</span>
-                            : <UserMinus size={13} />
-                          }
+                          Cancel
                         </button>
-                      )}
-                    </div>
+                        <button
+                          onClick={() => { handleRemoveMember(m.userId); setConfirmRemove(null); }}
+                          disabled={removing === m.userId}
+                          className="text-xs font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 px-2 py-1 rounded transition flex-shrink-0"
+                        >
+                          {removing === m.userId ? '…' : 'Remove'}
+                        </button>
+                      </div>
+                    ) : (
+                      /* Normal row */
+                      <div key={m.userId} className="flex items-center gap-2.5 py-1.5 px-1 group/member rounded-lg hover:bg-app-bg transition">
+                        <Avatar name={m.name} color={m.avatar_color} size="sm" />
+                        <span className="text-sm text-slate-300 flex-1 truncate">{m.name}</span>
+                        {m.status === 'pending' ? (
+                          <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 text-amber-400 bg-amber-400/10">
+                            <Clock size={9} />
+                            Awaiting
+                          </span>
+                        ) : (
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${
+                            m.role === 'owner'
+                              ? 'text-brand-accent bg-brand-accent/10'
+                              : 'text-slate-500 bg-slate-700/40'
+                          }`}>
+                            {m.role === 'owner' ? 'Owner' : 'Member'}
+                          </span>
+                        )}
+                        {m.role !== 'owner' && (
+                          <button
+                            onClick={() => setConfirmRemove(m)}
+                            className="opacity-0 group-hover/member:opacity-100 text-slate-600 hover:text-red-400 transition p-0.5 rounded flex-shrink-0"
+                            title="Remove from project"
+                          >
+                            <UserMinus size={13} />
+                          </button>
+                        )}
+                      </div>
+                    )
                   ))}
                 </div>
               )}
