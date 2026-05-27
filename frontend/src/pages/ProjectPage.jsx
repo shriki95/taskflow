@@ -322,11 +322,15 @@ export default function ProjectPage() {
   const boardTasks    = tasks.filter((t) => !t.parent_task_id);
   const calendarTasks = tasks.filter((t) => !t.recurrence_rule?.freq || t.parent_task_id);
 
-  // Count done instances per master task for the "Completed Tasks" section
+  // Count done/pending instances per master task for board visibility
   const recurringDoneCounts = {};
+  const recurringPendingCounts = {};
   tasks.forEach((t) => {
-    if (t.parent_task_id && t.status === 'done') {
+    if (!t.parent_task_id) return;
+    if (t.status === 'done') {
       recurringDoneCounts[t.parent_task_id] = (recurringDoneCounts[t.parent_task_id] || 0) + 1;
+    } else {
+      recurringPendingCounts[t.parent_task_id] = (recurringPendingCounts[t.parent_task_id] || 0) + 1;
     }
   });
 
@@ -445,6 +449,7 @@ export default function ProjectPage() {
               <KanbanBoard
                 tasks={boardTasks}
                 recurringDoneCounts={recurringDoneCounts}
+                recurringPendingCounts={recurringPendingCounts}
                 groups={groups}
                 members={members}
                 onTaskClick={setSelectedTask}

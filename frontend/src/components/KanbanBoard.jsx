@@ -385,6 +385,7 @@ export default function KanbanBoard({
   onTasksReorder,
   density = 'comfortable',
   recurringDoneCounts = {},
+  recurringPendingCounts = {},
 }) {
   const [activeTask, setActiveTask] = useState(null);
   const [activeColumn, setActiveColumn] = useState(null);
@@ -394,9 +395,18 @@ export default function KanbanBoard({
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } })
   );
 
-  // Recurring series masters with ≥1 completed instance appear in Completed, not Active
-  const activeTasks = tasks.filter((t) => t.status !== 'done' && !(recurringDoneCounts[t.taskId] > 0));
-  const doneTasks   = tasks.filter((t) => t.status === 'done' || recurringDoneCounts[t.taskId] > 0);
+  // A recurring master moves to Completed only when ALL its instances are done
+  // (done > 0 AND pending === 0). As long as any instance is still pending it
+  // stays in the active columns.
+  const activeTasks = tasks.filter((t) => {
+    if (t.status === 'done') return false;
+    const allDone = recurringDoneCounts[t.taskId] > 0 && !(recurringPendingCounts[t.taskId] > 0);
+    return !allDone;
+  });
+  const doneTasks = tasks.filter((t) => {
+    if (t.status === 'done') return true;
+    return recurringDoneCounts[t.taskId] > 0 && !(recurringPendingCounts[t.taskId] > 0);
+  });
 
   const tasksByGroup = {};
   groups.forEach((g) => { tasksByGroup[g.groupId] = []; });
