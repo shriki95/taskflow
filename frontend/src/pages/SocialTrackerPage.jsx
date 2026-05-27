@@ -26,7 +26,7 @@ function fmt(n) {
 
 async function fetchTikTokData(url, apiKey) {
   const res = await fetch(
-    `https://tiktok-scraper7.p.rapidapi.com/video/info?url=${encodeURIComponent(url)}`,
+    `https://tiktok-scraper7.p.rapidapi.com/video/detail?url=${encodeURIComponent(url)}`,
     { headers: { 'X-RapidAPI-Key': apiKey, 'X-RapidAPI-Host': 'tiktok-scraper7.p.rapidapi.com' } }
   );
   if (!res.ok) throw new Error(`TikTok API error ${res.status}`);
