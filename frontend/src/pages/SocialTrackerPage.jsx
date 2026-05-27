@@ -49,9 +49,10 @@ async function fetchTikTokData(url) {
 
 async function fetchInstagramData(url) {
   const target = `https://api.instagram.com/oembed/?url=${encodeURIComponent(url)}&omitscript=true`;
-  const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(target)}`);
+  const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(target)}`);
   if (!res.ok) throw new Error(`Instagram error ${res.status}`);
-  const json = await res.json();
+  const wrapper = await res.json();
+  const json = JSON.parse(wrapper.contents);
   return {
     platform: 'instagram',
     author: json.author_name || '',
