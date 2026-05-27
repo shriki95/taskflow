@@ -322,6 +322,14 @@ export default function ProjectPage() {
   const boardTasks    = tasks.filter((t) => !t.parent_task_id);
   const calendarTasks = tasks.filter((t) => !t.recurrence_rule?.freq || t.parent_task_id);
 
+  // Count done instances per master task for the "Completed Tasks" section
+  const recurringDoneCounts = {};
+  tasks.forEach((t) => {
+    if (t.parent_task_id && t.status === 'done') {
+      recurringDoneCounts[t.parent_task_id] = (recurringDoneCounts[t.parent_task_id] || 0) + 1;
+    }
+  });
+
   return (
     <Layout>
       <div className="flex flex-col h-full overflow-hidden">
@@ -435,7 +443,8 @@ export default function ProjectPage() {
           <div className="flex-1 overflow-auto p-3 sm:p-6">
             {view === 'board' && (
               <KanbanBoard
-                tasks={tasks.filter((t) => !t.parent_task_id)}
+                tasks={boardTasks}
+                recurringDoneCounts={recurringDoneCounts}
                 groups={groups}
                 members={members}
                 onTaskClick={setSelectedTask}

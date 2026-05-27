@@ -16,7 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, Check, X, Trash2, ChevronDown, ChevronRight, RotateCcw, GripVertical } from 'lucide-react';
+import { Plus, Check, X, Trash2, ChevronDown, ChevronRight, RotateCcw, GripVertical, RefreshCw } from 'lucide-react';
 import { isThisWeek, isThisMonth } from 'date-fns';
 import TaskCard from './TaskCard';
 
@@ -272,7 +272,7 @@ function ColumnDragOverlay({ col, colorIndex }) {
   );
 }
 
-function CompletedSection({ tasks, members, onTaskClick, onRestore, density }) {
+function CompletedSection({ tasks, members, onTaskClick, onRestore, density, recurringDoneCounts = {} }) {
   const [open, setOpen] = useState(false);
 
   const thisWeekCount = tasks.filter((t) => {
@@ -330,25 +330,37 @@ function CompletedSection({ tasks, members, onTaskClick, onRestore, density }) {
 
       {open && tasks.length > 0 && (
         <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-          {tasks.map((task) => (
-            <div key={task.taskId} className="relative group/done">
-              <TaskCard
-                task={task}
-                members={members}
-                onClick={() => onTaskClick(task)}
-                onStatusChange={onRestore}
-                density={density}
-              />
-              <button
-                onClick={(e) => { e.stopPropagation(); onRestore(task.taskId, 'todo'); }}
-                className="absolute top-2 right-2 opacity-0 group-hover/done:opacity-100 flex items-center gap-1 text-xs bg-app-bg hover:bg-app-card text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded-full transition border border-app-border shadow-sm"
-                title="Restore task"
-              >
-                <RotateCcw size={10} />
-                Restore
-              </button>
-            </div>
-          ))}
+          {tasks.map((task) => {
+            const doneCount = recurringDoneCounts[task.taskId] || 0;
+            const isRecurringSeries = doneCount > 0;
+            return (
+              <div key={task.taskId} className="relative group/done">
+                <TaskCard
+                  task={task}
+                  members={members}
+                  onClick={() => onTaskClick(task)}
+                  onStatusChange={onRestore}
+                  density={density}
+                />
+                {isRecurringSeries && (
+                  <div className="absolute top-2 left-2 flex items-center gap-1 text-xs bg-brand-accent/15 border border-brand-accent/30 text-brand-accent px-1.5 py-0.5 rounded-full font-semibold pointer-events-none">
+                    <RefreshCw size={9} />
+                    {doneCount}×
+                  </div>
+                )}
+                {!isRecurringSeries && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onRestore(task.taskId, 'todo'); }}
+                    className="absolute top-2 right-2 opacity-0 group-hover/done:opacity-100 flex items-center gap-1 text-xs bg-app-bg hover:bg-app-card text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded-full transition border border-app-border shadow-sm"
+                    title="Restore task"
+                  >
+                    <RotateCcw size={10} />
+                    Restore
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -372,6 +384,7 @@ export default function KanbanBoard({
   onTaskDuplicate,
   onTasksReorder,
   density = 'comfortable',
+  recurringDoneCounts = {},
 }) {
   const [activeTask, setActiveTask] = useState(null);
   const [activeColumn, setActiveColumn] = useState(null);
@@ -381,8 +394,9 @@ export default function KanbanBoard({
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } })
   );
 
-  const activeTasks = tasks.filter((t) => t.status !== 'done');
-  const doneTasks = tasks.filter((t) => t.status === 'done');
+  // Recurring series masters with ≥1 completed instance appear in Completed, not Active
+  const activeTasks = tasks.filter((t) => t.status !== 'done' && !(recurringDoneCounts[t.taskId] > 0));
+  const doneTasks   = tasks.filter((t) => t.status === 'done' || recurringDoneCounts[t.taskId] > 0);
 
   const tasksByGroup = {};
   groups.forEach((g) => { tasksByGroup[g.groupId] = []; });
@@ -559,6 +573,7 @@ export default function KanbanBoard({
         onTaskClick={onTaskClick}
         onRestore={onStatusChange}
         density={density}
+        recurringDoneCounts={recurringDoneCounts}
       />
     </div>
   );
