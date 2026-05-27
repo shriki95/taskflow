@@ -17,7 +17,7 @@ import {
 import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Plus, Check, X, Trash2, ChevronDown, ChevronRight, RotateCcw, GripVertical, RefreshCw } from 'lucide-react';
-import { isThisWeek, isThisMonth } from 'date-fns';
+import { isThisWeek, isThisMonth, format } from 'date-fns';
 import TaskCard from './TaskCard';
 
 const COL_COLORS = [
@@ -272,8 +272,73 @@ function ColumnDragOverlay({ col, colorIndex }) {
   );
 }
 
-function CompletedSection({ tasks, members, onTaskClick, onRestore, density, recurringDoneCounts = {} }) {
+function RestoreRecurringModal({ master, instances, onRestore, onClose }) {
+  const [selected, setSelected] = useState(new Set(instances.map((i) => i.taskId)));
+
+  const toggle = (id) => setSelected((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+
+  const handleRestore = () => {
+    [...selected].forEach((id) => onRestore(id, 'todo'));
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
+      <div className="bg-app-card border border-app-border rounded-2xl p-6 w-[380px] max-h-[80vh] flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 mb-1">
+          <RefreshCw size={14} className="text-brand-accent" />
+          <h3 className="text-white font-semibold text-sm">Restore recurring task</h3>
+        </div>
+        <p className="text-slate-400 text-xs mb-4">Select which occurrences to restore to active:</p>
+
+        <div className="overflow-y-auto flex-1 space-y-1 mb-4">
+          {instances.map((inst) => {
+            const [yr, mo, dy] = String(inst.due_date).split('-').map(Number);
+            const label = inst.due_date
+              ? format(new Date(yr, mo - 1, dy), 'EEEE, dd/MM/yyyy')
+              : 'Unknown date';
+            return (
+              <label key={inst.taskId} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-app-sidebar cursor-pointer transition">
+                <input
+                  type="checkbox"
+                  checked={selected.has(inst.taskId)}
+                  onChange={() => toggle(inst.taskId)}
+                  className="w-4 h-4 accent-brand-accent rounded"
+                />
+                <span className="text-sm text-slate-300 flex-1">{label}</span>
+                <span className="text-xs text-emerald-400 font-medium">Done</span>
+              </label>
+            );
+          })}
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-xl border border-app-border text-slate-400 hover:text-slate-200 text-sm transition"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleRestore}
+            disabled={selected.size === 0}
+            className="flex-1 px-4 py-2 rounded-xl bg-brand-accent text-white text-sm disabled:opacity-40 transition hover:opacity-90"
+          >
+            Restore{selected.size > 0 ? ` (${selected.size})` : ''}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CompletedSection({ tasks, members, onTaskClick, onRestore, density, recurringDoneCounts = {}, recurringDoneInstances = [] }) {
   const [open, setOpen] = useState(false);
+  const [restoreModal, setRestoreModal] = useState(null); // { master, instances }
 
   const thisWeekCount = tasks.filter((t) => {
     try { return isThisWeek(new Date(t.updated_at)); } catch { return false; }
@@ -333,13 +398,16 @@ function CompletedSection({ tasks, members, onTaskClick, onRestore, density, rec
           {tasks.map((task) => {
             const doneCount = recurringDoneCounts[task.taskId] || 0;
             const isRecurringSeries = doneCount > 0;
+            const doneInstances = isRecurringSeries
+              ? recurringDoneInstances.filter((i) => i.parent_task_id === task.taskId)
+              : [];
             return (
               <div key={task.taskId} className="relative group/done">
                 <TaskCard
-                  task={task}
+                  task={isRecurringSeries ? { ...task, status: 'done' } : task}
                   members={members}
                   onClick={() => onTaskClick(task)}
-                  onStatusChange={onRestore}
+                  onStatusChange={isRecurringSeries ? undefined : onRestore}
                   density={density}
                 />
                 {isRecurringSeries && (
@@ -348,20 +416,34 @@ function CompletedSection({ tasks, members, onTaskClick, onRestore, density, rec
                     {doneCount}×
                   </div>
                 )}
-                {!isRecurringSeries && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onRestore(task.taskId, 'todo'); }}
-                    className="absolute top-2 right-2 opacity-0 group-hover/done:opacity-100 flex items-center gap-1 text-xs bg-app-bg hover:bg-app-card text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded-full transition border border-app-border shadow-sm"
-                    title="Restore task"
-                  >
-                    <RotateCcw size={10} />
-                    Restore
-                  </button>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isRecurringSeries) {
+                      setRestoreModal({ master: task, instances: doneInstances });
+                    } else {
+                      onRestore(task.taskId, 'todo');
+                    }
+                  }}
+                  className="absolute top-2 right-2 opacity-0 group-hover/done:opacity-100 flex items-center gap-1 text-xs bg-app-bg hover:bg-app-card text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded-full transition border border-app-border shadow-sm"
+                  title="Restore task"
+                >
+                  <RotateCcw size={10} />
+                  Restore
+                </button>
               </div>
             );
           })}
         </div>
+      )}
+
+      {restoreModal && (
+        <RestoreRecurringModal
+          master={restoreModal.master}
+          instances={restoreModal.instances}
+          onRestore={onRestore}
+          onClose={() => setRestoreModal(null)}
+        />
       )}
     </div>
   );
@@ -386,6 +468,7 @@ export default function KanbanBoard({
   density = 'comfortable',
   recurringDoneCounts = {},
   recurringPendingCounts = {},
+  recurringDoneInstances = [],
 }) {
   const [activeTask, setActiveTask] = useState(null);
   const [activeColumn, setActiveColumn] = useState(null);
@@ -586,6 +669,7 @@ export default function KanbanBoard({
         onRestore={onStatusChange}
         density={density}
         recurringDoneCounts={recurringDoneCounts}
+        recurringDoneInstances={recurringDoneInstances}
       />
     </div>
   );

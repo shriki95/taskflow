@@ -325,10 +325,12 @@ export default function ProjectPage() {
   // Count done/pending instances per master task for board visibility
   const recurringDoneCounts = {};
   const recurringPendingCounts = {};
+  const recurringDoneInstances = [];
   tasks.forEach((t) => {
     if (!t.parent_task_id) return;
     if (t.status === 'done') {
       recurringDoneCounts[t.parent_task_id] = (recurringDoneCounts[t.parent_task_id] || 0) + 1;
+      recurringDoneInstances.push(t);
     } else {
       recurringPendingCounts[t.parent_task_id] = (recurringPendingCounts[t.parent_task_id] || 0) + 1;
     }
@@ -450,6 +452,7 @@ export default function ProjectPage() {
                 tasks={boardTasks}
                 recurringDoneCounts={recurringDoneCounts}
                 recurringPendingCounts={recurringPendingCounts}
+                recurringDoneInstances={recurringDoneInstances}
                 groups={groups}
                 members={members}
                 onTaskClick={setSelectedTask}
