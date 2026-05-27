@@ -368,7 +368,7 @@ export const tasksApi = {
   // Create individual occurrence instances for a recurring template.
   // dates: array of ISO date strings (YYYY-MM-DD).
   createInstances: async (projectId, templateTask, dates) => {
-    if (!dates.length) return;
+    if (!dates.length) return { data: { tasks: [] } };
     const rows = dates.map((d) => ({
       project_id: projectId,
       title: templateTask.title,
@@ -383,9 +383,30 @@ export const tasksApi = {
       parent_task_id: templateTask.taskId,
       is_template: false,
     }));
-    const { data, error } = await supabase.from('tasks').insert(rows).select('*, subtasks(id, completed)');
+    const { data, error } = await supabase.from('tasks').insert(rows).select('*');
     if (error) wrap(error);
-    return { data: { tasks: (data || []).map(fmtTask) } };
+
+    // Copy master task's subtasks to every new instance
+    const { data: masterSubtasks } = await supabase
+      .from('subtasks').select('*').eq('task_id', templateTask.taskId).order('position').order('created_at');
+    const subtaskCount = (masterSubtasks || []).length;
+    if (subtaskCount && data?.length) {
+      const subtaskRows = data.flatMap((inst) =>
+        masterSubtasks.map((s) => ({ task_id: inst.id, title: s.title, completed: false, position: s.position ?? 0 }))
+      );
+      const { error: subErr } = await supabase.from('subtasks').insert(subtaskRows);
+      if (subErr) wrap(subErr);
+    }
+
+    return {
+      data: {
+        tasks: (data || []).map((t) => ({
+          ...fmtTask({ ...t, subtasks: [] }),
+          subtasks_total: subtaskCount,
+          subtasks_completed: 0,
+        })),
+      },
+    };
   },
 
   // Delete all future instances of a recurring series (from fromDate onwards).
