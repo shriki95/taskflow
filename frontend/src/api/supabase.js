@@ -438,8 +438,11 @@ export const tasksApi = {
   duplicate: async (projectId, taskId) => {
     const { data: { user } } = await supabase.auth.getUser();
     const { data: orig, error: getErr } = await supabase
-      .from('tasks').select('*, subtasks(id, title, completed, position)').eq('id', taskId).single();
+      .from('tasks').select('*').eq('id', taskId).single();
     if (getErr) wrap(getErr);
+    // Fetch subtasks via direct query (more reliable than join under RLS)
+    const { data: origSubtasks } = await supabase
+      .from('subtasks').select('*').eq('task_id', taskId).order('position').order('created_at');
     const { data: copy, error: insErr } = await supabase
       .from('tasks')
       .insert({
@@ -458,15 +461,16 @@ export const tasksApi = {
       })
       .select().single();
     if (insErr) wrap(insErr);
-    const subtasks = orig.subtasks || [];
+    const subtasks = origSubtasks || [];
     if (subtasks.length) {
-      await supabase.from('subtasks').insert(
-        subtasks.map((s) => ({ task_id: copy.id, title: s.title, completed: false, position: s.position }))
+      const { error: subErr } = await supabase.from('subtasks').insert(
+        subtasks.map((s) => ({ task_id: copy.id, title: s.title, completed: false, position: s.position ?? 0 }))
       );
+      if (subErr) wrap(subErr);
     }
     const { data: final } = await supabase
       .from('tasks').select('*, subtasks(id, completed)').eq('id', copy.id).single();
-    return { data: fmtTask(final || { ...copy, subtasks: [] }) };
+    return { data: fmtTask(final || { ...copy, subtasks: subtasks.map((_, i) => ({ id: `tmp_${i}`, completed: false })) }) };
   },
 
   reorder: async (projectId, orderedIds) => {
