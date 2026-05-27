@@ -5,7 +5,7 @@ import { isSameDay, differenceInCalendarDays, differenceInCalendarWeeks, differe
 export const RECURRENCE_OPTIONS = [
   { value: null,        label: 'Does not repeat' },
   { value: 'daily',     label: 'Every day' },
-  { value: 'weekdays',  label: 'Every weekday (Mon–Fri)' },
+  { value: 'weekdays',  label: 'Every weekday (Sun–Thu)' },
   { value: 'weekly',    label: 'Every week' },
   { value: 'biweekly',  label: 'Every 2 weeks' },
   { value: 'monthly',   label: 'Every month' },
@@ -32,7 +32,7 @@ export function taskOccursOnDay(task, day) {
     case 'daily':
       return true;
     case 'weekdays':
-      return dayOfWeek >= 1 && dayOfWeek <= 5;
+      return dayOfWeek >= 0 && dayOfWeek <= 4; // Sun=0 … Thu=4
     case 'weekly':
       return differenceInCalendarDays(d, start) % 7 === 0;
     case 'biweekly':
