@@ -47,33 +47,30 @@ async function fetchTikTokData(url) {
   };
 }
 
-async function fetchInstagramData(url, apiKey) {
+async function fetchInstagramData(url) {
   const res = await fetch(
-    `https://instagram-scraper-api2.p.rapidapi.com/v1/post_info?code_or_id_or_url=${encodeURIComponent(url)}`,
-    { headers: { 'X-RapidAPI-Key': apiKey, 'X-RapidAPI-Host': 'instagram-scraper-api2.p.rapidapi.com' } }
+    `https://api.instagram.com/oembed/?url=${encodeURIComponent(url)}&omitscript=true`
   );
-  if (!res.ok) throw new Error(`Instagram API error ${res.status}`);
+  if (!res.ok) throw new Error(`Instagram error ${res.status}`);
   const json = await res.json();
-  const d = json.data || json;
   return {
     platform: 'instagram',
-    author: d.user?.username || '',
-    author_avatar: d.user?.profile_pic_url || '',
-    thumbnail_url: d.thumbnail_url || d.display_url || d.image_versions2?.candidates?.[0]?.url || '',
-    caption: d.edge_media_to_caption?.edges?.[0]?.node?.text || d.caption?.text || '',
-    likes: d.edge_media_preview_like?.count ?? d.like_count ?? 0,
-    comments: d.edge_media_to_comment?.count ?? d.comment_count ?? 0,
-    views: d.video_view_count ?? d.view_count ?? 0,
+    author: json.author_name || '',
+    author_avatar: '',
+    thumbnail_url: json.thumbnail_url || '',
+    caption: json.title || '',
+    likes: 0,
+    comments: 0,
+    views: 0,
     shares: 0,
     saves: 0,
-    posted_at: d.taken_at_timestamp ? new Date(d.taken_at_timestamp * 1000).toISOString() : null,
   };
 }
 
 async function fetchPostData(url, apiKey) {
   const platform = detectPlatform(url);
   if (!platform) throw new Error('Unsupported platform. Please use a TikTok or Instagram URL.');
-  return platform === 'tiktok' ? fetchTikTokData(url) : fetchInstagramData(url, apiKey);
+  return platform === 'tiktok' ? fetchTikTokData(url) : fetchInstagramData(url);
 }
 
 // ── Platform badge ───────────────────────────────────────────────
