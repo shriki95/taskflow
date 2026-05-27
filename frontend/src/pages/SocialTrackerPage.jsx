@@ -33,18 +33,17 @@ async function fetchTikTokData(url) {
   const json = await res.json();
   if (json.code !== 0) throw new Error(json.msg || 'TikTok fetch failed');
   const d = json.data;
-  const stats = d.statistics || d.stats || {};
   return {
     platform: 'tiktok',
     author: d.author?.nickname || d.author?.unique_id || '',
     author_avatar: d.author?.avatar || '',
     thumbnail_url: d.cover || d.origin_cover || '',
     caption: d.title || '',
-    likes: stats.digg_count || 0,
-    comments: stats.comment_count || 0,
-    views: stats.play_count || 0,
-    shares: stats.share_count || 0,
-    saves: stats.collect_count || 0,
+    likes: d.digg_count || 0,
+    comments: d.comment_count || 0,
+    views: d.play || d.play_count || 0,
+    shares: d.share_count || 0,
+    saves: d.collect_count || 0,
   };
 }
 
