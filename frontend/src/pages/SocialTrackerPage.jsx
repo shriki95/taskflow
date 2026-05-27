@@ -33,6 +33,7 @@ async function fetchTikTokData(url) {
   const json = await res.json();
   if (json.code !== 0) throw new Error(json.msg || 'TikTok fetch failed');
   const d = json.data;
+  console.log('[tikwm]', JSON.stringify(d, null, 2));
   return {
     platform: 'tiktok',
     author: d.author?.nickname || d.author?.unique_id || '',
