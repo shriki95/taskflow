@@ -727,10 +727,10 @@ export const socialPostsApi = {
 
   update: async (projectId, postId, fields) => {
     const allowed = ['author', 'author_avatar', 'thumbnail_url', 'caption', 'likes', 'comments', 'views', 'shares', 'saves', 'notes'];
-    const updates = {};
+    const updates = { updated_at: new Date().toISOString() };
     allowed.forEach((k) => { if (fields[k] !== undefined) updates[k] = fields[k]; });
-    const { error } = await supabase.from('social_posts').update(updates).eq('id', postId);
-    if (error) wrap(error);
+    const { error } = await supabase.from('social_posts').update(updates).eq('id', postId).eq('project_id', projectId);
+    if (error) console.error('social_posts update error:', error);
   },
 
   delete: async (projectId, postId) => {
