@@ -6,7 +6,6 @@ import {
 import { ChevronLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
 import { isRTL, formatDuration } from '../utils/text';
 import { getHolidaysForDate, HOLIDAY_STYLE } from '../utils/israeliHolidays';
-import { taskOccursOnDay } from '../utils/recurrence';
 
 const PRIORITY_BAR    = { high: 'bg-red-500',    medium: 'bg-amber-500',    low: 'bg-blue-500'    };
 const PRIORITY_BORDER = { high: 'border-l-red-500', medium: 'border-l-amber-500', low: 'border-l-blue-500' };
@@ -133,7 +132,6 @@ export default function WeekView({ tasks, members, onTaskClick, onStatusChange, 
     tasks.filter((t) => {
       if (!t.due_date) return false;
       if (isSpanTask(t)) return false;
-      if (t.recurrence_rule?.freq) return taskOccursOnDay(t, day);
       return isSameDay(new Date(t.due_date), day);
     });
 

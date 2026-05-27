@@ -4,7 +4,6 @@ import { ChevronLeft, ChevronRight, CheckCircle2, Circle, Clock, Calendar, Flag 
 import Avatar from './Avatar';
 import { isRTL, formatDuration } from '../utils/text';
 import { getHolidaysForDate, HOLIDAY_STYLE } from '../utils/israeliHolidays';
-import { taskOccursOnDay } from '../utils/recurrence';
 
 const PRIORITY_COLOR = { high: 'text-red-400', medium: 'text-amber-400', low: 'text-blue-400' };
 const PRIORITY_BORDER = { high: 'border-l-red-500', medium: 'border-l-amber-500', low: 'border-l-blue-500' };
@@ -98,7 +97,6 @@ export default function DayView({ tasks, members, onTaskClick, onStatusChange, i
 
   const dayTasks = tasks.filter((t) => {
     if (!t.due_date) return false;
-    if (t.recurrence_rule?.freq) return taskOccursOnDay(t, current);
     const span = getTaskSpan(t);
     return span.some((d) => isSameDay(d, current));
   });

@@ -42,6 +42,8 @@ const fmtTask = (t) => ({
   updated_at: t.updated_at,
   recurrence_rule: t.recurrence_rule || null,
   completions_count: t.completions_count || 0,
+  parent_task_id: t.parent_task_id || null,
+  is_template: t.is_template || false,
   subtasks_total:     (t.subtasks || []).length,
   subtasks_completed: (t.subtasks || []).filter((s) => s.completed).length,
 });
@@ -296,7 +298,9 @@ export const projectsApi = {
 export const tasksApi = {
   list: async (projectId) => {
     const { data, error } = await supabase
-      .from('tasks').select('*, subtasks(id, completed)').eq('project_id', projectId)
+      .from('tasks').select('*, subtasks(id, completed)')
+      .eq('project_id', projectId)
+      .eq('is_template', false)
       .order('position', { ascending: true }).order('created_at', { ascending: true });
     if (error) wrap(error);
     return { data: { tasks: (data || []).map(fmtTask) } };
@@ -347,6 +351,8 @@ export const tasksApi = {
     if (fields.span_days !== undefined)         updates.span_days = fields.span_days;
     if (fields.position !== undefined)          updates.position = fields.position;
     if (fields.recurrence_rule !== undefined)   updates.recurrence_rule = fields.recurrence_rule;
+    if (fields.is_template !== undefined)       updates.is_template = fields.is_template;
+    if (fields.parent_task_id !== undefined)    updates.parent_task_id = fields.parent_task_id;
 
     const { data, error } = await supabase
       .from('tasks').update(updates).eq('id', taskId).select().single();
@@ -358,6 +364,48 @@ export const tasksApi = {
     const { error } = await supabase.from('tasks').delete().eq('id', taskId);
     if (error) wrap(error);
     return { data: { message: 'Task deleted' } };
+  },
+
+  // Create individual occurrence instances for a recurring template.
+  // dates: array of ISO date strings (YYYY-MM-DD).
+  createInstances: async (projectId, templateTask, dates) => {
+    if (!dates.length) return;
+    const rows = dates.map((d) => ({
+      project_id: projectId,
+      title: templateTask.title,
+      description: templateTask.description || '',
+      status: 'todo',
+      priority: templateTask.priority || 'medium',
+      due_date: d,
+      assignee_id: templateTask.assignee_id || null,
+      group_id: templateTask.group_id || null,
+      duration_minutes: templateTask.duration_minutes || null,
+      created_by: templateTask.created_by || null,
+      parent_task_id: templateTask.taskId,
+      is_template: false,
+    }));
+    const { data, error } = await supabase.from('tasks').insert(rows).select('*, subtasks(id, completed)');
+    if (error) wrap(error);
+    return { data: { tasks: (data || []).map(fmtTask) } };
+  },
+
+  // Delete all future instances of a recurring series (from fromDate onwards).
+  deleteInstancesFrom: async (parentTaskId, fromDate) => {
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('parent_task_id', parentTaskId)
+      .gte('due_date', fromDate);
+    if (error) wrap(error);
+  },
+
+  // Delete ALL instances of a recurring series.
+  deleteAllInstances: async (parentTaskId) => {
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('parent_task_id', parentTaskId);
+    if (error) wrap(error);
   },
 
   duplicate: async (projectId, taskId) => {

@@ -92,8 +92,8 @@ function TaskRow({ task, members, onClick, onStatusChange, onDueDateChange, allG
       >
         <span className={`${textSz} font-medium truncate w-full flex items-center gap-1.5 ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}`}>
           {task.title}
-          {task.recurrence_rule?.freq && (
-            <RefreshCw size={10} className="text-slate-500 flex-shrink-0" title="Recurring task" />
+          {task.parent_task_id && (
+            <RefreshCw size={10} className="text-brand-accent/60 flex-shrink-0" title="Recurring instance" />
           )}
         </span>
         <span className={`sm:hidden mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${priority.cls}`}>

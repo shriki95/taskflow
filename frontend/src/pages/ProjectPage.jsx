@@ -5,7 +5,7 @@ import {
   LayoutGrid, List, CalendarDays, CalendarRange, Sun,
   Plus, ArrowLeft, Pencil,
 } from 'lucide-react';
-import { projectsApi, tasksApi, taskGroupsApi, taskCompletionsApi } from '../api/supabase';
+import { projectsApi, tasksApi, taskGroupsApi } from '../api/supabase';
 import Layout from '../components/Layout';
 import KanbanBoard from '../components/KanbanBoard';
 import ListView from '../components/ListView';
@@ -125,20 +125,6 @@ export default function ProjectPage() {
   const handleStatusChange = useCallback(
     async (taskId, newStatus) => {
       const original = tasks.find((t) => t.taskId === taskId);
-      // Recurring tasks: record completion instead of changing status
-      if (newStatus === 'done' && original?.recurrence_rule?.freq) {
-        setTasks((prev) => prev.map((t) =>
-          t.taskId === taskId ? { ...t, completions_count: (t.completions_count || 0) + 1 } : t
-        ));
-        try {
-          await taskCompletionsApi.create(taskId);
-        } catch {
-          setTasks((prev) => prev.map((t) =>
-            t.taskId === taskId ? { ...t, completions_count: original.completions_count || 0 } : t
-          ));
-        }
-        return;
-      }
       const completedAt = newStatus === 'done' ? new Date().toISOString() : null;
       setTasks((prev) => prev.map((t) => (t.taskId === taskId ? { ...t, status: newStatus, completed_at: completedAt } : t)));
       try {
@@ -149,6 +135,14 @@ export default function ProjectPage() {
     },
     [tasks, projectId]
   );
+
+  const handleRecurrenceSet = useCallback((templateTaskId, newInstances) => {
+    setTasks((prev) => [
+      ...prev.filter((t) => t.taskId !== templateTaskId),
+      ...newInstances,
+    ]);
+    setSelectedTask(null);
+  }, []);
 
   const handleDueDateChange = useCallback(
     async (taskId, newDate) => {
@@ -523,6 +517,7 @@ export default function ProjectPage() {
                 onUpdate={handleTaskUpdate}
                 onDelete={handleTaskDelete}
                 onDuplicate={handleTaskDuplicate}
+                onRecurrenceSet={handleRecurrenceSet}
               />
             )}
           </AnimatePresence>
