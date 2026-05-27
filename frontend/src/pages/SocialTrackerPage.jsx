@@ -24,36 +24,27 @@ function fmt(n) {
   return String(n);
 }
 
-async function fetchTikTokData(url, apiKey) {
-  const body = new URLSearchParams({ url, hd: '1' });
+async function fetchTikTokData(url) {
   const res = await fetch(
-    'https://tiktok-scraper7.p.rapidapi.com/video/info',
-    {
-      method: 'POST',
-      headers: {
-        'X-RapidAPI-Key': apiKey,
-        'X-RapidAPI-Host': 'tiktok-scraper7.p.rapidapi.com',
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: body.toString(),
-    }
+    `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}&hd=1`,
+    { headers: { 'Accept': 'application/json' } }
   );
   if (!res.ok) throw new Error(`TikTok API error ${res.status}`);
   const json = await res.json();
-  if (json.code !== 0 && json.code !== undefined) throw new Error(json.msg || 'TikTok fetch failed');
-  const d = json.data || json;
-  const stats = d.stats || d.statistics || {};
+  if (json.code !== 0) throw new Error(json.msg || 'TikTok fetch failed');
+  const d = json.data;
+  const stats = d.statistics || d.stats || {};
   return {
     platform: 'tiktok',
-    author: d.author?.nickname || d.author?.uniqueId || '',
-    author_avatar: d.author?.avatarThumb || d.author?.avatarMedium || '',
-    thumbnail_url: d.video?.cover || d.video?.originCover || d.video?.dynamicCover || '',
-    caption: d.desc || '',
-    likes: stats.diggCount || 0,
-    comments: stats.commentCount || 0,
-    views: stats.playCount || 0,
-    shares: stats.shareCount || 0,
-    saves: stats.collectCount || 0,
+    author: d.author?.nickname || d.author?.unique_id || '',
+    author_avatar: d.author?.avatar || '',
+    thumbnail_url: d.cover || d.origin_cover || '',
+    caption: d.title || '',
+    likes: stats.digg_count || 0,
+    comments: stats.comment_count || 0,
+    views: stats.play_count || 0,
+    shares: stats.share_count || 0,
+    saves: stats.collect_count || 0,
   };
 }
 
@@ -83,7 +74,7 @@ async function fetchInstagramData(url, apiKey) {
 async function fetchPostData(url, apiKey) {
   const platform = detectPlatform(url);
   if (!platform) throw new Error('Unsupported platform. Please use a TikTok or Instagram URL.');
-  return platform === 'tiktok' ? fetchTikTokData(url, apiKey) : fetchInstagramData(url, apiKey);
+  return platform === 'tiktok' ? fetchTikTokData(url) : fetchInstagramData(url, apiKey);
 }
 
 // ── Platform badge ───────────────────────────────────────────────
