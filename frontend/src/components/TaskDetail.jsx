@@ -534,8 +534,9 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
       } else {
         const { data: updatedMaster } = await tasksApi.update(projectId, task.taskId, { recurrence_rule: { freq, days }, is_template: false });
         await tasksApi.deleteAllInstances(task.taskId);
-        const startDate = task.due_date || new Date().toISOString().split('T')[0];
-        const dates = generateOccurrenceDates(startDate, freq, days).map((d) => d.toISOString().split('T')[0]);
+        const today = new Date();
+        const startDate = task.due_date || `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        const dates = generateOccurrenceDates(startDate, freq, days).map((d) => format(d, 'yyyy-MM-dd'));
         const { data: { tasks: instances } } = await tasksApi.createInstances(projectId, { ...task, recurrence_rule: { freq, days } }, dates);
         onRecurrenceSet?.(task.taskId, { ...updatedMaster, subtasks_total: subtasks.length, subtasks_completed: subtasks.filter((s) => s.completed).length }, instances);
       }

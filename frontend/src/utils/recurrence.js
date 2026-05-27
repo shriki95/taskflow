@@ -14,9 +14,10 @@ export const RECURRENCE_OPTIONS = [
 
 // Returns array of Date objects for all occurrences starting from startDate
 // for the next `days` calendar days (default 90).
+// Parses startDate as local midnight to avoid UTC-offset date-shift bugs.
 export function generateOccurrenceDates(startDate, freq, days = 90) {
-  const start = new Date(startDate);
-  start.setHours(0, 0, 0, 0);
+  const [yr, mo, dy] = String(startDate).split('-').map(Number);
+  const start = new Date(yr, mo - 1, dy); // local midnight — no UTC shift
   const end = addDays(start, days);
   const dates = [];
 
@@ -65,8 +66,8 @@ export function generateOccurrenceDates(startDate, freq, days = 90) {
 // Legacy helper kept for any remaining callers — will be removed once views are updated.
 export function taskOccursOnDay(task, day) {
   if (!task.due_date) return false;
-  const start = new Date(task.due_date);
-  start.setHours(0, 0, 0, 0);
+  const [yr, mo, dy] = String(task.due_date).split('-').map(Number);
+  const start = new Date(yr, mo - 1, dy);
   const d = new Date(day);
   d.setHours(0, 0, 0, 0);
   if (d < start) return false;
