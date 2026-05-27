@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { projectsApi, tasksApi, taskGroupsApi } from '../api/supabase';
 import Layout from '../components/Layout';
+import SocialTrackerPage from './SocialTrackerPage';
 import KanbanBoard from '../components/KanbanBoard';
 import ListView from '../components/ListView';
 import CalendarView from '../components/CalendarView';
@@ -301,6 +302,10 @@ export default function ProjectPage() {
         </div>
       </Layout>
     );
+  }
+
+  if (project?.project_type === 'social_tracker') {
+    return <SocialTrackerPage project={project} />;
   }
 
   const MAIN_VIEWS = [

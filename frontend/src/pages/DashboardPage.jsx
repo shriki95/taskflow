@@ -14,6 +14,8 @@ const PROJECT_COLORS = [
 ];
 
 function CreateProjectModal({ onClose, onCreate }) {
+  const [step, setStep] = useState(1);
+  const [projectType, setProjectType] = useState('tasks');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState(PROJECT_COLORS[0]);
@@ -23,146 +25,196 @@ function CreateProjectModal({ onClose, onCreate }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     try {
-      const { data } = await projectsApi.create({ name: name.trim(), description, color });
+      const { data } = await projectsApi.create({ name: name.trim(), description, color, project_type: projectType });
       onCreate(data);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create project');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}/>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
         className="relative bg-app-card border border-app-border rounded-2xl p-6 w-full max-w-md z-10"
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold text-slate-100">New project</h2>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 transition">
-            <X size={20} />
-          </button>
+          <div>
+            <h2 className="text-lg font-semibold text-slate-100">New project</h2>
+            {step === 2 && (
+              <p className="text-xs text-slate-500 mt-0.5">
+                {projectType === 'tasks' ? 'Task Management' : 'Social Media Tracker'}
+              </p>
+            )}
+          </div>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 transition"><X size={20}/></button>
         </div>
 
-        {error && (
-          <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
-            <AlertCircle size={14} className="text-red-400" />
-            <p className="text-red-400 text-sm">{error}</p>
+        {step === 1 && (
+          <div className="space-y-3">
+            <p className="text-sm text-slate-400 mb-4">Choose a project type:</p>
+            <button
+              onClick={() => { setProjectType('tasks'); setStep(2); }}
+              className="w-full text-left p-4 rounded-xl border-2 border-app-border hover:border-brand-accent/50 hover:bg-brand-accent/5 transition group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center flex-shrink-0">
+                  <FolderKanban size={18} className="text-brand-accent"/>
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-200 group-hover:text-white transition">Task Management</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Board, Calendar, Lists — full project management</p>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => { setProjectType('social_tracker'); setStep(2); }}
+              className="w-full text-left p-4 rounded-xl border-2 border-app-border hover:border-pink-500/50 hover:bg-pink-500/5 transition group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'linear-gradient(135deg,#833ab4,#fd1d1d 50%,#fcb045)', opacity: 0.9 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                    <rect x="2" y="2" width="20" height="20" rx="5"/>
+                    <circle cx="12" cy="12" r="4" fill="none" stroke="white" strokeWidth="2"/>
+                    <circle cx="17.5" cy="6.5" r="1.5"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-200 group-hover:text-white transition">Social Media Tracker</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Track TikTok & Instagram posts — views, likes, engagement</p>
+                </div>
+              </div>
+            </button>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Project name <span className="text-red-400">*</span>
-            </label>
-            <input
-              autoFocus type="text" required value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="My awesome project"
-              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Description</label>
-            <textarea
-              value={description} onChange={(e) => setDescription(e.target.value)}
-              placeholder="What's this project about?" rows={2}
-              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition resize-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Color</label>
-            <div className="flex gap-2 flex-wrap">
-              {PROJECT_COLORS.map((c) => (
-                <button key={c} type="button" onClick={() => setColor(c)}
-                  className={`w-7 h-7 rounded-full transition-transform ${color === c ? 'ring-2 ring-offset-2 ring-offset-app-card ring-white scale-110' : 'hover:scale-110'}`}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
-            </div>
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 border border-app-border text-slate-400 hover:text-slate-200 py-2.5 rounded-lg transition font-medium">
-              Cancel
-            </button>
-            <button type="submit" disabled={loading || !name.trim()}
-              className="flex-1 bg-brand-accent hover:bg-brand-accent/90 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 rounded-lg transition font-semibold">
-              {loading ? 'Creating…' : 'Create project'}
-            </button>
-          </div>
-        </form>
+        {step === 2 && (
+          <>
+            {error && (
+              <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
+                <AlertCircle size={14} className="text-red-400"/>
+                <p className="text-red-400 text-sm">{error}</p>
+              </div>
+            )}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                  Project name <span className="text-red-400">*</span>
+                </label>
+                <input autoFocus type="text" required value={name} onChange={(e) => setName(e.target.value)}
+                  placeholder="My awesome project"
+                  className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition"/>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Description</label>
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+                  placeholder="What's this project about?" rows={2}
+                  className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition resize-none"/>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Color</label>
+                <div className="flex gap-2 flex-wrap">
+                  {PROJECT_COLORS.map((c) => (
+                    <button key={c} type="button" onClick={() => setColor(c)}
+                      className={`w-7 h-7 rounded-full transition-transform ${color === c ? 'ring-2 ring-offset-2 ring-offset-app-card ring-white scale-110' : 'hover:scale-110'}`}
+                      style={{ backgroundColor: c }}/>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setStep(1)}
+                  className="px-4 border border-app-border text-slate-400 hover:text-slate-200 py-2.5 rounded-lg transition font-medium">
+                  Back
+                </button>
+                <button type="submit" disabled={loading || !name.trim()}
+                  className="flex-1 bg-brand-accent hover:bg-brand-accent/90 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 rounded-lg transition font-semibold">
+                  {loading ? 'Creating…' : 'Create project'}
+                </button>
+              </div>
+            </form>
+          </>
+        )}
       </motion.div>
     </div>
   );
 }
 
+function SocialIcon({ color }) {
+  return (
+    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden"
+      style={{ background: 'linear-gradient(135deg,#833ab4,#fd1d1d 50%,#fcb045)' }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+        <rect x="2" y="2" width="20" height="20" rx="5"/>
+        <circle cx="12" cy="12" r="4" fill="none" stroke="white" strokeWidth="2"/>
+        <circle cx="17.5" cy="6.5" r="1.5"/>
+      </svg>
+    </div>
+  );
+}
+
 function ProjectCard({ project, stats, members = [], onClick, onSettings }) {
+  const isSocial = project.project_type === 'social_tracker';
   const { total, done, inProgress } = stats || { total: 0, done: 0, inProgress: 0 };
-  const todo  = total - done - inProgress;
-  const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+  const todo    = total - done - inProgress;
+  const pct     = total > 0 ? Math.round((done / total) * 100) : 0;
   const pctSize = total >= 20 ? 'text-2xl' : total >= 8 ? 'text-3xl' : 'text-4xl';
 
   return (
     <motion.div
-      whileHover={{ y: -3, scale: 1.01 }}
-      onClick={onClick}
+      whileHover={{ y: -3, scale: 1.01 }} onClick={onClick}
       className="bg-app-card border border-app-border rounded-2xl p-5 cursor-pointer hover:border-slate-600 transition-all group flex flex-col gap-4 overflow-hidden relative"
       style={{ borderTop: `3px solid ${project.color}` }}
     >
-      {/* Settings button */}
-      <button
-        onClick={(e) => { e.stopPropagation(); onSettings(project); }}
-        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-app-bg transition"
-      >
-        <MoreHorizontal size={15} />
+      <button onClick={(e) => { e.stopPropagation(); onSettings(project); }}
+        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-app-bg transition">
+        <MoreHorizontal size={15}/>
       </button>
 
-      {/* Top: icon + name */}
       <div className="flex items-start gap-3">
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
-          style={{ backgroundColor: project.color + '22', border: `1px solid ${project.color}44` }}
-        >
-          <FolderKanban size={16} style={{ color: project.color }} />
-        </div>
+        {isSocial ? (
+          <SocialIcon color={project.color}/>
+        ) : (
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+            style={{ backgroundColor: project.color + '22', border: `1px solid ${project.color}44` }}>
+            <FolderKanban size={16} style={{ color: project.color }}/>
+          </div>
+        )}
         <div className="flex-1 min-w-0 pr-6">
           <h3 className="font-semibold text-slate-100 truncate group-hover:text-white transition leading-tight">
             {project.name}
           </h3>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {isSocial && (
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full text-pink-400 bg-pink-400/10 border border-pink-400/20">
+                Social Tracker
+              </span>
+            )}
             {project.description && (
               <p className="text-xs text-slate-500 truncate">{project.description}</p>
             )}
-            {members.length > 0 && (
+            {!isSocial && members.length > 0 && (
               <div className="flex items-center flex-shrink-0">
                 {members.slice(0, 5).map((m, i) => (
                   <div key={m.userId} style={{ marginLeft: i > 0 ? '-5px' : 0, zIndex: 5 - i }}>
-                    <Avatar name={m.name} color={m.avatar_color} size="xs"
-                      className="ring-1 ring-app-card" />
+                    <Avatar name={m.name} color={m.avatar_color} size="xs" className="ring-1 ring-app-card"/>
                   </div>
                 ))}
-                {members.length > 5 && (
-                  <span className="ml-1 text-[10px] text-slate-500">+{members.length - 5}</span>
-                )}
+                {members.length > 5 && <span className="ml-1 text-[10px] text-slate-500">+{members.length - 5}</span>}
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Stats */}
-      {total > 0 ? (
+      {isSocial ? (
+        <p className="text-xs text-slate-600 italic">TikTok & Instagram post tracking</p>
+      ) : total > 0 ? (
         <>
           <div className="flex items-end gap-3">
             <div className="flex-1">
@@ -171,7 +223,7 @@ function ProjectCard({ project, stats, members = [], onClick, onSettings }) {
               </div>
               <div className="h-1.5 rounded-full bg-app-bg overflow-hidden">
                 <div className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${pct}%`, backgroundColor: project.color }} />
+                  style={{ width: `${pct}%`, backgroundColor: project.color }}/>
               </div>
             </div>
             <span className={`font-bold leading-none flex-shrink-0 ${pctSize}`} style={{ color: project.color }}>
@@ -181,17 +233,17 @@ function ProjectCard({ project, stats, members = [], onClick, onSettings }) {
           <div className="flex items-center gap-2 flex-wrap">
             {done > 0 && (
               <span className="flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">
-                <CheckCircle2 size={10} /> {done} done
+                <CheckCircle2 size={10}/> {done} done
               </span>
             )}
             {inProgress > 0 && (
               <span className="flex items-center gap-1 text-[11px] text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-full">
-                <Clock size={10} /> {inProgress} active
+                <Clock size={10}/> {inProgress} active
               </span>
             )}
             {todo > 0 && (
               <span className="flex items-center gap-1 text-[11px] text-slate-500 bg-slate-700/40 px-2 py-0.5 rounded-full">
-                <Circle size={10} /> {todo} to do
+                <Circle size={10}/> {todo} to do
               </span>
             )}
           </div>
@@ -278,7 +330,7 @@ export default function DashboardPage() {
   const loadStats = async (list) => {
     const results = await Promise.all(
       list
-        .filter((p) => p.memberStatus === 'accepted')
+        .filter((p) => p.memberStatus === 'accepted' && p.project_type !== 'social_tracker')
         .map((p) => tasksApi.list(p.projectId)
           .then(({ data }) => ({ id: p.projectId, tasks: data.tasks }))
           .catch(() => ({ id: p.projectId, tasks: [] })))

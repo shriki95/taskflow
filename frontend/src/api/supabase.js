@@ -21,6 +21,7 @@ const fmtProject = (p, memberStatus = 'accepted') => ({
   color: p.color || '#7c3aed',
   owner_id: p.owner_id,
   created_at: p.created_at,
+  project_type: p.project_type || 'tasks',
   memberStatus,
 });
 
@@ -158,12 +159,12 @@ export const projectsApi = {
     return { data: { projects } };
   },
 
-  create: async ({ name, description = '', color = '#7c3aed' }) => {
+  create: async ({ name, description = '', color = '#7c3aed', project_type = 'tasks' }) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) wrap(new Error('Not authenticated'));
     const { data, error } = await supabase
       .from('projects')
-      .insert({ name, description, color, owner_id: user.id })
+      .insert({ name, description, color, owner_id: user.id, project_type })
       .select().single();
     if (error) wrap(error);
     if (!data) wrap(new Error('Failed to read project after create'));
@@ -683,5 +684,57 @@ export const usersApi = {
         avatar_color: p.avatar_color || '#7c3aed',
       }));
     return { data: { users } };
+  },
+};
+
+// ══════════════════════════════════════════════════════════════
+// SOCIAL POSTS API
+// ══════════════════════════════════════════════════════════════
+export const socialPostsApi = {
+  list: async (projectId) => {
+    const { data, error } = await supabase
+      .from('social_posts')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false });
+    if (error) wrap(error);
+    return { data: { posts: data || [] } };
+  },
+
+  create: async (projectId, post) => {
+    const { data, error } = await supabase
+      .from('social_posts')
+      .insert({
+        project_id: projectId,
+        url: post.url,
+        platform: post.platform,
+        author: post.author || null,
+        author_avatar: post.author_avatar || null,
+        thumbnail_url: post.thumbnail_url || null,
+        caption: post.caption || null,
+        likes: post.likes || 0,
+        comments: post.comments || 0,
+        views: post.views || 0,
+        shares: post.shares || 0,
+        saves: post.saves || 0,
+        posted_at: post.posted_at || null,
+        notes: post.notes || null,
+      })
+      .select().single();
+    if (error) wrap(error);
+    return data;
+  },
+
+  update: async (projectId, postId, fields) => {
+    const allowed = ['author', 'author_avatar', 'thumbnail_url', 'caption', 'likes', 'comments', 'views', 'shares', 'saves', 'notes'];
+    const updates = {};
+    allowed.forEach((k) => { if (fields[k] !== undefined) updates[k] = fields[k]; });
+    const { error } = await supabase.from('social_posts').update(updates).eq('id', postId);
+    if (error) wrap(error);
+  },
+
+  delete: async (projectId, postId) => {
+    const { error } = await supabase.from('social_posts').delete().eq('id', postId);
+    if (error) wrap(error);
   },
 };
