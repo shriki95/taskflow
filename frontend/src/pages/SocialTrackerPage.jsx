@@ -50,8 +50,8 @@ async function fetchTikTokData(url, apiKey) {
 
 async function fetchInstagramData(url, apiKey) {
   const res = await fetch(
-    `https://instagram-scraper-api2.p.rapidapi.com/v1/post_info?code_or_id_or_url=${encodeURIComponent(url)}`,
-    { headers: { 'X-RapidAPI-Key': apiKey, 'X-RapidAPI-Host': 'instagram-scraper-api2.p.rapidapi.com' } }
+    `https://instagram-scraper-stable-api.p.rapidapi.com/v1/post_info?code_or_id_or_url=${encodeURIComponent(url)}`,
+    { headers: { 'X-RapidAPI-Key': apiKey, 'X-RapidAPI-Host': 'instagram-scraper-stable-api.p.rapidapi.com' } }
   );
   if (!res.ok) throw new Error(`Instagram API error ${res.status}`);
   const json = await res.json();
