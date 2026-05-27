@@ -422,6 +422,10 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
   const handleScopeDeleteFuture = async () => {
     setScopeModal(null);
     await tasksApi.deleteInstancesFrom(task.parent_task_id, task.due_date);
+    const remaining = await tasksApi.countInstances(task.parent_task_id);
+    if (remaining === 0) {
+      await tasksApi.delete(projectId, task.parent_task_id);
+    }
     onReloadTasks?.();
     onClose();
   };

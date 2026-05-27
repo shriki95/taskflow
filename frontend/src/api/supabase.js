@@ -407,6 +407,16 @@ export const tasksApi = {
     if (error) wrap(error);
   },
 
+  // Returns the number of instances remaining for a parent task.
+  countInstances: async (parentTaskId) => {
+    const { count, error } = await supabase
+      .from('tasks')
+      .select('id', { count: 'exact', head: true })
+      .eq('parent_task_id', parentTaskId);
+    if (error) wrap(error);
+    return count ?? 0;
+  },
+
   // Update all future instances of a series from fromDate onwards (excludes status/date fields).
   updateInstancesFrom: async (parentTaskId, fromDate, fields) => {
     const updates = {};
