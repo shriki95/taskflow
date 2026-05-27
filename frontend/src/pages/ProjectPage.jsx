@@ -144,6 +144,12 @@ export default function ProjectPage() {
     setSelectedTask(null);
   }, []);
 
+  const handleReloadTasks = useCallback(async () => {
+    const { data } = await tasksApi.list(projectId);
+    setTasks(data.tasks);
+    setSelectedTask(null);
+  }, [projectId]);
+
   const handleDueDateChange = useCallback(
     async (taskId, newDate) => {
       const original = tasks.find((t) => t.taskId === taskId)?.due_date;
@@ -523,6 +529,7 @@ export default function ProjectPage() {
                 onDelete={handleTaskDelete}
                 onDuplicate={handleTaskDuplicate}
                 onRecurrenceSet={handleRecurrenceSet}
+                onReloadTasks={handleReloadTasks}
               />
             )}
           </AnimatePresence>

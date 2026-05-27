@@ -167,7 +167,155 @@ function SortableSubtask({ subtask, onToggle, onDelete, onEdit }) {
   );
 }
 
-export default function TaskDetail({ task, projectId, members, groups = [], onClose, onUpdate, onDelete, onDuplicate, onRecurrenceSet }) {
+const PERIOD_PRESETS = [
+  { value: 30,  label: '1 month'  },
+  { value: 60,  label: '2 months' },
+  { value: 90,  label: '3 months' },
+  { value: 180, label: '6 months' },
+  { value: 365, label: '1 year'   },
+];
+
+const PROPAGATABLE = new Set(['title', 'description', 'priority', 'assignee_id', 'duration_minutes', 'group_id']);
+
+function RecurrenceSetupModal({ currentFreq, onConfirm, onCancel }) {
+  const [freq, setFreq]               = useState(currentFreq || 'daily');
+  const [periodType, setPeriodType]   = useState('preset');
+  const [presetDays, setPresetDays]   = useState(90);
+  const [customDate, setCustomDate]   = useState('');
+
+  const handleConfirm = () => {
+    let days;
+    if (periodType === 'custom' && customDate) {
+      const diff = Math.round((new Date(customDate) - new Date()) / 86400000);
+      days = Math.max(1, diff);
+    } else {
+      days = presetDays;
+    }
+    onConfirm(freq, days);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-app-card border border-app-border rounded-2xl p-5 w-80 shadow-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <RefreshCw size={14} className="text-brand-accent" />
+            <h3 className="text-sm font-semibold text-slate-200">Set Recurring Schedule</h3>
+          </div>
+          <button onClick={onCancel} className="text-slate-500 hover:text-slate-300 transition"><X size={14} /></button>
+        </div>
+
+        <div className="mb-4">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Repeat</p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {RECURRENCE_OPTIONS.filter((o) => o.value).map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setFreq(opt.value)}
+                className={`px-3 py-2 rounded-lg text-xs font-medium border transition text-left
+                  ${freq === opt.value
+                    ? 'bg-brand-accent/15 border-brand-accent/40 text-brand-accent'
+                    : 'bg-app-bg border-app-border text-slate-400 hover:border-slate-500'}`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-5">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">For how long?</p>
+          <div className="grid grid-cols-3 gap-1.5 mb-2">
+            {PERIOD_PRESETS.map((p) => (
+              <button
+                key={p.value}
+                onClick={() => { setPeriodType('preset'); setPresetDays(p.value); }}
+                className={`py-2 rounded-lg text-xs font-medium border transition
+                  ${periodType === 'preset' && presetDays === p.value
+                    ? 'bg-brand-accent/15 border-brand-accent/40 text-brand-accent'
+                    : 'bg-app-bg border-app-border text-slate-400 hover:border-slate-500'}`}
+              >
+                {p.label}
+              </button>
+            ))}
+            <button
+              onClick={() => setPeriodType('custom')}
+              className={`py-2 rounded-lg text-xs font-medium border transition
+                ${periodType === 'custom'
+                  ? 'bg-brand-accent/15 border-brand-accent/40 text-brand-accent'
+                  : 'bg-app-bg border-app-border text-slate-400 hover:border-slate-500'}`}
+            >
+              Custom
+            </button>
+          </div>
+          {periodType === 'custom' && (
+            <input
+              type="date"
+              value={customDate}
+              onChange={(e) => setCustomDate(e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+              className="w-full bg-app-bg border border-app-border rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-brand-accent transition"
+            />
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          <button onClick={onCancel} className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-app-bg border border-app-border text-slate-400 hover:text-slate-300 transition">
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={periodType === 'custom' && !customDate}
+            className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-brand-accent text-white hover:bg-brand-accent/90 transition disabled:opacity-50"
+          >
+            Set Schedule
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RecurrenceScopeModal({ type, onThisOnly, onThisAndFuture, onCancel }) {
+  const isDelete = type === 'delete';
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-app-card border border-app-border rounded-2xl p-5 w-72 shadow-2xl">
+        <div className="flex items-center gap-2 mb-2">
+          <RefreshCw size={14} className="text-brand-accent" />
+          <h3 className="text-sm font-semibold text-slate-200">Recurring Task</h3>
+        </div>
+        <p className="text-xs text-slate-400 mb-4">
+          {isDelete ? 'Which occurrences would you like to delete?' : 'Which occurrences would you like to update?'}
+        </p>
+        <div className="space-y-2">
+          <button
+            onClick={onThisOnly}
+            className="w-full px-3 py-2.5 rounded-lg text-left border bg-app-bg border-app-border hover:border-slate-500 transition"
+          >
+            <div className="text-xs font-semibold text-slate-200">Only this occurrence</div>
+            <div className="text-xs text-slate-500 mt-0.5">Changes apply to this day only</div>
+          </button>
+          <button
+            onClick={onThisAndFuture}
+            className={`w-full px-3 py-2.5 rounded-lg text-left border transition
+              ${isDelete
+                ? 'bg-red-500/8 border-red-500/20 text-red-400 hover:bg-red-500/15'
+                : 'bg-brand-accent/8 border-brand-accent/20 text-brand-accent hover:bg-brand-accent/15'}`}
+          >
+            <div className="text-xs font-semibold">This and all future occurrences</div>
+            <div className="text-xs opacity-70 mt-0.5">{isDelete ? 'Deletes from this day onwards' : 'Updates from this day onwards'}</div>
+          </button>
+          <button onClick={onCancel} className="w-full px-3 py-1.5 rounded-lg text-xs text-slate-500 hover:text-slate-400 transition">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function TaskDetail({ task, projectId, members, groups = [], onClose, onUpdate, onDelete, onDuplicate, onRecurrenceSet, onReloadTasks }) {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640);
 
   useEffect(() => {
@@ -205,6 +353,11 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
   const [commentText, setCommentText]   = useState('');
   const [sendingComment, setSendingComment] = useState(false);
 
+  const [showRecurrenceSetup, setShowRecurrenceSetup] = useState(false);
+  const [scopeModal, setScopeModal]     = useState(null); // null | { type: 'edit'|'delete', fields?: {} }
+
+  const isInstance = !!task.parent_task_id;
+
   const titleRef = useRef();
   const descRef  = useRef();
 
@@ -223,18 +376,54 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
     });
   };
 
-  const updateField = async (fields) => {
+  const applyUpdate = async (fields) => {
     setSaving(true);
     try {
       const { data } = await tasksApi.update(projectId, task.taskId, fields);
-      onUpdate({
-        ...data,
-        subtasks_total: subtasks.length,
-        subtasks_completed: subtasks.filter((s) => s.completed).length,
-      });
+      onUpdate({ ...data, subtasks_total: subtasks.length, subtasks_completed: subtasks.filter((s) => s.completed).length });
     } finally {
       setSaving(false);
     }
+  };
+
+  const updateField = (fields) => {
+    if (isInstance && Object.keys(fields).some((k) => PROPAGATABLE.has(k))) {
+      setScopeModal({ type: 'edit', fields });
+      return;
+    }
+    return applyUpdate(fields);
+  };
+
+  const handleScopeEditThisOnly = async () => {
+    const fields = scopeModal.fields;
+    setScopeModal(null);
+    await applyUpdate(fields);
+  };
+
+  const handleScopeEditFuture = async () => {
+    const fields = scopeModal.fields;
+    setScopeModal(null);
+    setSaving(true);
+    try {
+      await applyUpdate(fields);
+      await tasksApi.updateInstancesFrom(task.parent_task_id, task.due_date, fields);
+      onReloadTasks?.();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleScopeDeleteThisOnly = async () => {
+    setScopeModal(null);
+    await tasksApi.delete(projectId, task.taskId);
+    onDelete(task.taskId);
+  };
+
+  const handleScopeDeleteFuture = async () => {
+    setScopeModal(null);
+    await tasksApi.deleteInstancesFrom(task.parent_task_id, task.due_date);
+    onReloadTasks?.();
+    onClose();
   };
 
   const handleTitleBlur = () => {
@@ -317,10 +506,10 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
+    if (isInstance) { setScopeModal({ type: 'delete' }); return; }
     if (!confirm('Delete this task?')) return;
-    await tasksApi.delete(projectId, task.taskId);
-    onDelete(task.taskId);
+    tasksApi.delete(projectId, task.taskId).then(() => onDelete(task.taskId));
   };
 
   const handleDuplicate = async () => {
@@ -330,7 +519,8 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
     onClose();
   };
 
-  const handleRecurrenceChange = async (freq) => {
+  const handleRecurrenceChange = async (freq, days = 90) => {
+    setShowRecurrenceSetup(false);
     setSaving(true);
     try {
       if (!freq) {
@@ -338,11 +528,11 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
         const { data } = await tasksApi.update(projectId, task.taskId, { recurrence_rule: null, is_template: false });
         onUpdate({ ...data, subtasks_total: subtasks.length, subtasks_completed: subtasks.filter((s) => s.completed).length });
       } else {
-        const { data: updatedMaster } = await tasksApi.update(projectId, task.taskId, { recurrence_rule: { freq }, is_template: false });
+        const { data: updatedMaster } = await tasksApi.update(projectId, task.taskId, { recurrence_rule: { freq, days }, is_template: false });
         await tasksApi.deleteAllInstances(task.taskId);
         const startDate = task.due_date || new Date().toISOString().split('T')[0];
-        const dates = generateOccurrenceDates(startDate, freq, 90).map((d) => d.toISOString().split('T')[0]);
-        const { data: { tasks: instances } } = await tasksApi.createInstances(projectId, { ...task, recurrence_rule: { freq } }, dates);
+        const dates = generateOccurrenceDates(startDate, freq, days).map((d) => d.toISOString().split('T')[0]);
+        const { data: { tasks: instances } } = await tasksApi.createInstances(projectId, { ...task, recurrence_rule: { freq, days } }, dates);
         onRecurrenceSet?.(task.taskId, { ...updatedMaster, subtasks_total: subtasks.length, subtasks_completed: subtasks.filter((s) => s.completed).length }, instances);
       }
     } finally {
@@ -351,13 +541,13 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
   };
 
   const isDone                = task.status === 'done';
-  const isInstance            = !!task.parent_task_id;
   const completedSubtasks     = subtasks.filter((s) => s.completed).length;
   const pendingSubtasks       = subtasks.length - completedSubtasks;
   const canMarkDone           = subtasks.length === 0 || pendingSubtasks === 0;
   const assignee              = members.find((m) => m.userId === task.assignee_id);
 
   return (
+    <>
     <motion.div
       initial={isMobile ? { y: '100%' } : { x: '100%', opacity: 0 }}
       animate={isMobile ? { y: 0 } : { x: 0, opacity: 1 }}
@@ -562,28 +752,25 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
             </select>
           </FieldRow>
 
-          <FieldRow icon={<RefreshCw size={12} />} label="Repeat">
-            <FieldSelect
-              value={task.recurrence_rule?.freq || ''}
-              options={RECURRENCE_OPTIONS.map((o) => ({ value: o.value ?? '', label: o.label }))}
-              onChange={handleRecurrenceChange}
-              renderValue={(v) => {
-                const opt = RECURRENCE_OPTIONS.find((o) => (o.value ?? '') === v);
-                return (
-                  <span className="flex items-center gap-1.5">
-                    <RefreshCw size={11} className={v ? 'text-brand-accent' : 'text-slate-500'} />
-                    {opt?.label || 'Does not repeat'}
-                  </span>
-                );
-              }}
-              renderOption={(opt) => (
-                <span className="flex items-center gap-1.5">
-                  <RefreshCw size={11} className={opt.value ? 'text-brand-accent' : 'text-slate-500'} />
-                  {opt.label}
-                </span>
-              )}
-            />
-          </FieldRow>
+          {!isInstance && (
+            <FieldRow icon={<RefreshCw size={12} />} label="Repeat">
+              <button
+                onClick={() => setShowRecurrenceSetup(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-app-bg border border-app-border hover:border-slate-500 text-sm text-slate-300 transition"
+              >
+                <RefreshCw size={11} className={task.recurrence_rule?.freq ? 'text-brand-accent' : 'text-slate-500'} />
+                {RECURRENCE_OPTIONS.find((o) => o.value === (task.recurrence_rule?.freq || null))?.label || 'Does not repeat'}
+              </button>
+            </FieldRow>
+          )}
+          {isInstance && (
+            <FieldRow icon={<RefreshCw size={12} />} label="Repeat">
+              <span className="flex items-center gap-1.5 text-xs text-brand-accent/80 bg-brand-accent/8 border border-brand-accent/20 px-2.5 py-1.5 rounded-lg">
+                <RefreshCw size={10} />
+                Recurring instance
+              </span>
+            </FieldRow>
+          )}
         </div>
 
         {/* Description */}
@@ -728,5 +915,32 @@ export default function TaskDetail({ task, projectId, members, groups = [], onCl
 
       </div>
     </motion.div>
+
+    {showRecurrenceSetup && (
+      <RecurrenceSetupModal
+        currentFreq={task.recurrence_rule?.freq}
+        onConfirm={handleRecurrenceChange}
+        onCancel={() => setShowRecurrenceSetup(false)}
+      />
+    )}
+
+    {scopeModal?.type === 'edit' && (
+      <RecurrenceScopeModal
+        type="edit"
+        onThisOnly={handleScopeEditThisOnly}
+        onThisAndFuture={handleScopeEditFuture}
+        onCancel={() => setScopeModal(null)}
+      />
+    )}
+
+    {scopeModal?.type === 'delete' && (
+      <RecurrenceScopeModal
+        type="delete"
+        onThisOnly={handleScopeDeleteThisOnly}
+        onThisAndFuture={handleScopeDeleteFuture}
+        onCancel={() => setScopeModal(null)}
+      />
+    )}
+    </>
   );
 }

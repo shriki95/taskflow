@@ -407,6 +407,24 @@ export const tasksApi = {
     if (error) wrap(error);
   },
 
+  // Update all future instances of a series from fromDate onwards (excludes status/date fields).
+  updateInstancesFrom: async (parentTaskId, fromDate, fields) => {
+    const updates = {};
+    if (fields.title !== undefined)            updates.title = fields.title;
+    if (fields.description !== undefined)      updates.description = fields.description;
+    if (fields.priority !== undefined)         updates.priority = fields.priority;
+    if (fields.assignee_id !== undefined)      updates.assignee_id = fields.assignee_id;
+    if (fields.group_id !== undefined)         updates.group_id = fields.group_id;
+    if (fields.duration_minutes !== undefined) updates.duration_minutes = fields.duration_minutes;
+    if (!Object.keys(updates).length) return;
+    const { error } = await supabase
+      .from('tasks')
+      .update(updates)
+      .eq('parent_task_id', parentTaskId)
+      .gte('due_date', fromDate);
+    if (error) wrap(error);
+  },
+
   duplicate: async (projectId, taskId) => {
     const { data: { user } } = await supabase.auth.getUser();
     const { data: orig, error: getErr } = await supabase
