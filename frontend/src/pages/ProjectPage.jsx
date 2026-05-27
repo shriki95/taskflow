@@ -136,10 +136,10 @@ export default function ProjectPage() {
     [tasks, projectId]
   );
 
-  const handleRecurrenceSet = useCallback((templateTaskId, newInstances) => {
+  const handleRecurrenceSet = useCallback((masterTaskId, updatedMaster, instances) => {
     setTasks((prev) => [
-      ...prev.filter((t) => t.taskId !== templateTaskId),
-      ...newInstances,
+      ...prev.map((t) => t.taskId === masterTaskId ? updatedMaster : t),
+      ...instances,
     ]);
     setSelectedTask(null);
   }, []);
@@ -311,6 +311,11 @@ export default function ProjectPage() {
 
   const isCalendarView = ['calendar', 'week', 'day'].includes(view);
 
+  // Series masters (recurrence_rule set, no parent_task_id) → board/list only
+  // Instances (parent_task_id set) → calendar views only
+  const boardTasks    = tasks.filter((t) => !t.parent_task_id);
+  const calendarTasks = tasks.filter((t) => !t.recurrence_rule?.freq || t.parent_task_id);
+
   return (
     <Layout>
       <div className="flex flex-col h-full overflow-hidden">
@@ -424,7 +429,7 @@ export default function ProjectPage() {
           <div className="flex-1 overflow-auto p-3 sm:p-6">
             {view === 'board' && (
               <KanbanBoard
-                tasks={tasks}
+                tasks={tasks.filter((t) => !t.parent_task_id)}
                 groups={groups}
                 members={members}
                 onTaskClick={setSelectedTask}
@@ -444,7 +449,7 @@ export default function ProjectPage() {
             )}
             {view === 'list' && (
               <ListView
-                tasks={tasks}
+                tasks={boardTasks}
                 members={members}
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
@@ -464,7 +469,7 @@ export default function ProjectPage() {
             )}
             {view === 'calendar' && (
               <CalendarView
-                tasks={tasks}
+                tasks={calendarTasks}
                 members={members}
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
@@ -478,7 +483,7 @@ export default function ProjectPage() {
             {view === 'week' && (
               <WeekView
                 key={calNavDate?.toISOString()}
-                tasks={tasks}
+                tasks={calendarTasks}
                 members={members}
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}
@@ -493,7 +498,7 @@ export default function ProjectPage() {
             {view === 'day' && (
               <DayView
                 key={calNavDate?.toISOString()}
-                tasks={tasks}
+                tasks={calendarTasks}
                 members={members}
                 onTaskClick={setSelectedTask}
                 onStatusChange={handleStatusChange}

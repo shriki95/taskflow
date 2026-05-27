@@ -300,7 +300,6 @@ export const tasksApi = {
     const { data, error } = await supabase
       .from('tasks').select('*, subtasks(id, completed)')
       .eq('project_id', projectId)
-      .eq('is_template', false)
       .order('position', { ascending: true }).order('created_at', { ascending: true });
     if (error) wrap(error);
     return { data: { tasks: (data || []).map(fmtTask) } };
