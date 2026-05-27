@@ -25,9 +25,18 @@ function fmt(n) {
 }
 
 async function fetchTikTokData(url, apiKey) {
+  const body = new URLSearchParams({ url, hd: '1' });
   const res = await fetch(
-    `https://tiktok-scraper7.p.rapidapi.com/video/detail?url=${encodeURIComponent(url)}`,
-    { headers: { 'X-RapidAPI-Key': apiKey, 'X-RapidAPI-Host': 'tiktok-scraper7.p.rapidapi.com' } }
+    'https://tiktok-scraper7.p.rapidapi.com/video/info',
+    {
+      method: 'POST',
+      headers: {
+        'X-RapidAPI-Key': apiKey,
+        'X-RapidAPI-Host': 'tiktok-scraper7.p.rapidapi.com',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: body.toString(),
+    }
   );
   if (!res.ok) throw new Error(`TikTok API error ${res.status}`);
   const json = await res.json();
