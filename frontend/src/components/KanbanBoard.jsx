@@ -395,17 +395,19 @@ export default function KanbanBoard({
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } })
   );
 
-  // A recurring master moves to Completed only when ALL its instances are done
-  // (done > 0 AND pending === 0). As long as any instance is still pending it
-  // stays in the active columns.
+  // Active columns: all non-done tasks, including recurring masters that still
+  // have pending instances (even if some are already done).
   const activeTasks = tasks.filter((t) => {
     if (t.status === 'done') return false;
-    const allDone = recurringDoneCounts[t.taskId] > 0 && !(recurringPendingCounts[t.taskId] > 0);
-    return !allDone;
+    // Recurring master with no pending left → only in completed section
+    if (recurringDoneCounts[t.taskId] > 0 && !(recurringPendingCounts[t.taskId] > 0)) return false;
+    return true;
   });
+  // Completed section: regular done tasks + any recurring master with ≥1 done instance.
+  // A master can appear here AND in active columns simultaneously when partially done.
   const doneTasks = tasks.filter((t) => {
     if (t.status === 'done') return true;
-    return recurringDoneCounts[t.taskId] > 0 && !(recurringPendingCounts[t.taskId] > 0);
+    return recurringDoneCounts[t.taskId] > 0;
   });
 
   const tasksByGroup = {};
