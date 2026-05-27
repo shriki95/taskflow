@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Plus, ArrowLeft, Key, X, RefreshCw, ExternalLink,
+  Plus, ArrowLeft, X, RefreshCw, ExternalLink,
   Heart, Eye, MessageCircle, Share2, Trash2, AlertCircle, Loader2,
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -363,57 +363,9 @@ function PostDetailModal({ post, apiKey, onClose, onDelete, onRefresh }) {
   );
 }
 
-// ── API Key Setup ────────────────────────────────────────────────
-
-function ApiKeySetup({ onSave }) {
-  const [key, setKey] = useState('');
-  return (
-    <div className="flex flex-col items-center justify-center flex-1 text-center px-4 py-16">
-      <div className="w-16 h-16 rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center mb-6">
-        <Key size={28} className="text-brand-accent"/>
-      </div>
-      <h2 className="text-xl font-bold text-slate-100 mb-2">Connect RapidAPI</h2>
-      <p className="text-slate-400 text-sm mb-6 max-w-sm leading-relaxed">
-        To automatically fetch metrics from TikTok and Instagram, you need a free RapidAPI key.
-      </p>
-      <div className="text-left bg-app-card border border-app-border rounded-xl p-4 mb-6 max-w-md w-full text-sm">
-        <p className="text-slate-300 font-medium mb-3">Setup (free, 2 minutes):</p>
-        <ol className="space-y-2 text-slate-400">
-          <li className="flex gap-2.5">
-            <span className="text-brand-accent font-bold flex-shrink-0">1.</span>
-            Sign up at <a href="https://rapidapi.com" target="_blank" rel="noopener noreferrer" className="text-brand-accent underline">rapidapi.com</a>
-          </li>
-          <li className="flex gap-2.5">
-            <span className="text-brand-accent font-bold flex-shrink-0">2.</span>
-            Subscribe (free tier) to <strong className="text-slate-300">TikTok Scraper7</strong> and <strong className="text-slate-300">Instagram Scraper API2</strong>
-          </li>
-          <li className="flex gap-2.5">
-            <span className="text-brand-accent font-bold flex-shrink-0">3.</span>
-            Copy your API key from the RapidAPI dashboard header
-          </li>
-          <li className="flex gap-2.5">
-            <span className="text-brand-accent font-bold flex-shrink-0">4.</span>
-            Paste it below and click Save
-          </li>
-        </ol>
-      </div>
-      <div className="flex gap-2 w-full max-w-md">
-        <input
-          type="text" value={key} onChange={(e) => setKey(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && key.trim() && onSave(key.trim())}
-          placeholder="Paste your RapidAPI key here…"
-          className="flex-1 bg-app-bg border border-app-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-accent transition text-sm"
-        />
-        <button onClick={() => key.trim() && onSave(key.trim())} disabled={!key.trim()}
-          className="px-4 py-2.5 rounded-lg bg-brand-accent text-white text-sm font-semibold disabled:opacity-50 transition hover:opacity-90">
-          Save
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ── Main Page ────────────────────────────────────────────────────
+
+const API_KEY = import.meta.env.VITE_RAPIDAPI_KEY || '';
 
 export default function SocialTrackerPage({ project }) {
   const navigate = useNavigate();
@@ -421,18 +373,6 @@ export default function SocialTrackerPage({ project }) {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
-  const [editingKey, setEditingKey] = useState(false);
-  const [newKey, setNewKey] = useState('');
-
-  const storageKey = `social-apikey-${project.projectId}`;
-  const [apiKey, setApiKey] = useState(() => {
-    try { return localStorage.getItem(storageKey) || ''; } catch { return ''; }
-  });
-
-  const saveKey = (k) => {
-    setApiKey(k); setEditingKey(false); setNewKey('');
-    try { localStorage.setItem(storageKey, k); } catch {}
-  };
 
   useEffect(() => {
     socialPostsApi.list(project.projectId)
@@ -452,73 +392,27 @@ export default function SocialTrackerPage({ project }) {
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, ...newData } : p));
   };
 
-  const header = (
-    <div className="flex-shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-b border-app-border flex items-center justify-between gap-2 flex-wrap">
-      <div className="flex items-center gap-3 min-w-0">
-        <button onClick={() => navigate('/dashboard')} className="text-slate-500 hover:text-slate-300 transition flex-shrink-0">
-          <ArrowLeft size={18}/>
-        </button>
-        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }}/>
-        <h1 className="font-semibold text-slate-100 truncate">{project.name}</h1>
-        {posts.length > 0 && (
-          <span className="text-xs text-slate-500 bg-app-card border border-app-border px-2 py-0.5 rounded-full flex-shrink-0">
-            {posts.length}
-          </span>
-        )}
-      </div>
-      <div className="flex items-center gap-2">
-        {apiKey && (
-          <button onClick={() => setEditingKey((v) => !v)} title="API Key settings"
-            className="p-2 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-app-card transition">
-            <Key size={15}/>
-          </button>
-        )}
-        {apiKey && (
+  return (
+    <Layout>
+      <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex-shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-b border-app-border flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-3 min-w-0">
+            <button onClick={() => navigate('/dashboard')} className="text-slate-500 hover:text-slate-300 transition flex-shrink-0">
+              <ArrowLeft size={18}/>
+            </button>
+            <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }}/>
+            <h1 className="font-semibold text-slate-100 truncate">{project.name}</h1>
+            {posts.length > 0 && (
+              <span className="text-xs text-slate-500 bg-app-card border border-app-border px-2 py-0.5 rounded-full flex-shrink-0">
+                {posts.length}
+              </span>
+            )}
+          </div>
           <button onClick={() => setShowAdd(true)}
             className="flex items-center gap-2 bg-brand-accent hover:bg-brand-accent/90 text-white font-semibold px-3 sm:px-4 py-2 rounded-lg transition text-sm">
             <Plus size={15}/> Add post
           </button>
-        )}
-      </div>
-    </div>
-  );
-
-  if (!apiKey) {
-    return (
-      <Layout>
-        <div className="flex flex-col h-full overflow-hidden">
-          {header}
-          <ApiKeySetup onSave={saveKey}/>
         </div>
-      </Layout>
-    );
-  }
-
-  return (
-    <Layout>
-      <div className="flex flex-col h-full overflow-hidden">
-        {header}
-
-        <AnimatePresence>
-          {editingKey && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-              className="flex-shrink-0 px-6 py-2.5 border-b border-app-border bg-app-card/50 flex items-center gap-3"
-            >
-              <Key size={13} className="text-brand-accent flex-shrink-0"/>
-              <input type="text" value={newKey} onChange={(e) => setNewKey(e.target.value)}
-                placeholder="Enter new RapidAPI key…"
-                className="flex-1 bg-app-bg border border-app-border rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-brand-accent transition"/>
-              <button onClick={() => newKey.trim() && saveKey(newKey.trim())} disabled={!newKey.trim()}
-                className="px-3 py-1.5 rounded-lg bg-brand-accent text-white text-xs font-semibold disabled:opacity-50">
-                Update
-              </button>
-              <button onClick={() => setEditingKey(false)} className="text-slate-500 hover:text-slate-300">
-                <X size={15}/>
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         <div className="flex-1 overflow-auto p-4 sm:p-6">
           {loading ? (
@@ -557,7 +451,7 @@ export default function SocialTrackerPage({ project }) {
         {showAdd && (
           <AddPostModal
             projectId={project.projectId}
-            apiKey={apiKey}
+            apiKey={API_KEY}
             onClose={() => setShowAdd(false)}
             onAdded={handleAdded}
           />
@@ -565,7 +459,7 @@ export default function SocialTrackerPage({ project }) {
         {selectedPost && (
           <PostDetailModal
             post={selectedPost}
-            apiKey={apiKey}
+            apiKey={API_KEY}
             onClose={() => setSelectedPost(null)}
             onDelete={handleDelete}
             onRefresh={handleRefresh}
